@@ -1,0 +1,62 @@
+// =====================================================================
+//  BACKEND (draait op txiki.js, NIET op Node.js!)
+//
+//  De backend is de "sensor" van de game. Hij doet twee dingen:
+//    1. Toetsaanslagen tellen          (zie keyboard.js)
+//    2. Kijken welke app actief is     (zie coding-apps.js)
+//  En stuurt dat door naar de frontend (het venster) met app.push().
+//
+//  Alle game-logica (snelheid, coins, upgrades) zit in de frontend:
+//  src/frontend/game.js en src/frontend/progress.js
+// =====================================================================
+
+import { createKeyCounter } from './keyboard.js';
+import { isCodingApp, isIgnored, normalizeAppName } from './coding-apps.js';
+
+// Functies die de frontend kan aanroepen met tiny.api.call('naam').
+export const api = {
+  // Geeft de huidige actieve app terug (handig bij het opstarten).
+  async currentApp(_params, app) {
+    return readFrontApp(app);
+  },
+};
+
+// Laatste "echte" app (dus niet deze game zelf of de taakbalk).
+let lastApp = { name: '', coding: false };
+
+// Leest welke app nu op de voorgrond staat.
+async function readFrontApp(app) {
+  let front = null;
+  try {
+    front = await app.frontmostApp(); // { name, bundleId, pid } of null
+  } catch {}
+
+  const name = front && front.name ? front.name : '';
+  // Klik je op de game zelf of de taakbalk? Dan houden we de vorige app aan.
+  if (name && !isIgnored(name)) {
+    lastApp = { name, coding: isCodingApp(name) };
+  }
+  return lastApp;
+}
+
+// init() wordt 1x aangeroepen als het venster open is.
+export function init(app) {
+  const keys = createKeyCounter(app);
+
+  // --- Elke 100 ms: toetsaanslagen doorsturen naar de frontend ---
+  setInterval(() => {
+    const n = keys.take();
+    if (n > 0) app.push('keys', { n });
+  }, 100);
+
+  // --- Elke 400 ms: checken welke app actief is ---
+  let lastSent = '';
+  setInterval(async () => {
+    const info = await readFrontApp(app);
+    const key = normalizeAppName(info.name) + '|' + info.coding;
+    if (key !== lastSent) {
+      lastSent = key;
+      app.push('app', info); // alleen sturen als het veranderd is
+    }
+  }, 400);
+}

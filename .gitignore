@@ -1,0 +1,11 @@
+# Gebouwde app (tinyjs build) en tijdelijke bestanden van tinyjs dev
+dist/
+.build/
+
+# Eventuele npm-pakketten
+node_modules/
+
+# Windows / editor rommel
+Thumbs.db
+desktop.ini
+.vscode/

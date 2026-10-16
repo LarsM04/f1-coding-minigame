@@ -1,0 +1,168 @@
+/* =====================================================================
+   STYLING van het widget
+   Het venster is transparant (zie tinyjs.json "chrome"), dus alles
+   buiten #widget is doorzichtig.
+   ===================================================================== */
+
+/* Kleuren op één plek, makkelijk aan te passen */
+:root {
+  --bg: rgba(16, 18, 26, 0.94);
+  --panel: #1c2030;
+  --line: #2c3246;
+  --text: #eef0f6;
+  --muted: #8b93a7;
+  --f1-red: #e10600;
+  --race: #19d16b;
+  --pits: #ff9f1a;
+  --gold: #ffd400;
+}
+
+* { box-sizing: border-box; }
+
+html, body {
+  margin: 0;
+  background: transparent;
+  color: var(--text);
+  font: 12px "Segoe UI", system-ui, sans-serif;
+  user-select: none;
+  overflow: hidden;
+}
+
+#widget {
+  position: relative;
+  width: 360px;
+  background: var(--bg);
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  overflow: hidden;
+  padding-bottom: 8px;
+}
+
+/* ---------- Bovenbalk ---------- */
+header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  height: 34px;
+  padding: 0 6px 0 10px;
+  background: linear-gradient(90deg, var(--f1-red), #8a0400 70%, #3a0200);
+  cursor: grab;
+}
+.logo { font-weight: 800; font-style: italic; letter-spacing: 0.5px; flex: 1; }
+.logo b { font-size: 14px; }
+.coins {
+  font-weight: 800;
+  background: rgba(0, 0, 0, 0.35);
+  border-radius: 10px;
+  padding: 2px 8px;
+  color: var(--gold);
+  transition: transform 0.12s;
+}
+.coins.bump { transform: scale(1.18); }
+.buttons { display: flex; gap: 2px; }
+.buttons button {
+  width: 24px; height: 24px;
+  border: 0; border-radius: 6px;
+  background: rgba(0, 0, 0, 0.25);
+  color: #fff; font-size: 12px; cursor: pointer;
+}
+.buttons button:hover { background: rgba(0, 0, 0, 0.5); }
+.buttons button.close:hover { background: #000; }
+.buttons button.active { background: rgba(0, 0, 0, 0.6); }
+
+/* ---------- Status (race / pits) ---------- */
+.status {
+  display: flex; align-items: center; gap: 8px;
+  padding: 6px 10px 4px;
+  font-size: 11px;
+}
+.status .pill {
+  font-weight: 800; font-style: italic;
+  padding: 1px 8px; border-radius: 8px;
+  color: #000;
+}
+.status.race .pill { background: var(--race); }
+.status.pits .pill { background: var(--pits); }
+.status .app { color: var(--muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+/* ---------- Racebaan ---------- */
+#trackWrap {
+  margin: 2px 8px 0;
+  border-radius: 8px;
+  overflow: hidden;
+  height: 120px;
+}
+#track { display: block; }
+
+/* ---------- HUD ---------- */
+.hud {
+  display: flex; align-items: center; gap: 12px;
+  padding: 6px 10px 0;
+}
+.speed { font-size: 22px; font-weight: 800; font-style: italic; min-width: 80px; }
+.speed small { font-size: 10px; color: var(--muted); margin-left: 3px; font-style: normal; }
+.lap { flex: 1; }
+.lapTop { font-size: 10px; color: var(--muted); font-weight: 700; display: flex; gap: 6px; align-items: center; }
+.lapTop span#lapNum { color: var(--text); }
+.drs {
+  margin-left: auto;
+  font-size: 9px; padding: 0 5px; border-radius: 4px;
+  background: #2a2f40; color: #555d73;
+}
+.drs.on { background: #00c86f; color: #001a0d; }
+.bar { height: 6px; background: #2a2f40; border-radius: 3px; margin-top: 3px; overflow: hidden; }
+.bar div { height: 100%; width: 0; background: linear-gradient(90deg, var(--f1-red), var(--gold)); }
+
+/* ---------- Klein venster (compact) ---------- */
+#widget.compact .status,
+#widget.compact #trackWrap { display: none; }
+
+/* ---------- Garage ---------- */
+#garage {
+  position: absolute;
+  top: 34px; left: 0; right: 0; bottom: 0;
+  background: var(--bg);
+  overflow-y: auto;
+  padding: 4px 10px 10px;
+}
+#garage.hidden { display: none; }
+#garage h3 {
+  margin: 8px 0 4px;
+  font-size: 11px; text-transform: uppercase; letter-spacing: 1px;
+  color: var(--muted);
+}
+.upg {
+  display: flex; align-items: center; gap: 8px;
+  background: var(--panel); border-radius: 8px;
+  padding: 5px 6px 5px 8px; margin-bottom: 4px;
+}
+.upg .icon { font-size: 16px; }
+.upg .info { flex: 1; min-width: 0; }
+.upg .name { font-weight: 700; }
+.upg .lvl { color: var(--muted); font-size: 10px; margin-left: 4px; }
+.upg .desc { color: var(--muted); font-size: 10px; }
+.buy {
+  border: 0; border-radius: 6px;
+  background: var(--gold); color: #000;
+  font-weight: 800; padding: 4px 8px; cursor: pointer;
+  min-width: 58px;
+}
+.buy:disabled { background: #3a4055; color: #7c849a; cursor: default; }
+
+.liveries { display: flex; flex-wrap: wrap; gap: 6px; }
+.livery {
+  border: 2px solid transparent; border-radius: 8px;
+  background: var(--panel); color: var(--text);
+  padding: 4px 6px; cursor: pointer; font-size: 10px;
+  display: flex; align-items: center; gap: 5px;
+}
+.livery .swatch { width: 14px; height: 14px; border-radius: 3px; }
+.livery.selected { border-color: var(--gold); }
+.livery.locked { opacity: 0.6; }
+
+.stats { display: grid; grid-template-columns: 1fr auto; gap: 2px 10px; color: var(--muted); }
+.stats b { color: var(--text); text-align: right; }
+
+/* Scrollbar in de garage */
+#garage::-webkit-scrollbar { width: 6px; }
+#garage::-webkit-scrollbar-thumb { background: #3a4055; border-radius: 3px; }

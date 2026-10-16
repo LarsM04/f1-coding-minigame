@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+<meta charset="utf-8">
+<title>F1 Coding Minigame</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<!-- Het hele widget-paneel -->
+<div id="widget">
+
+  <!-- BOVENBALK: hiermee sleep je het venster (data-tiny-drag) -->
+  <header data-tiny-drag>
+    <div class="logo">🏎️ <b>F1</b> CODING</div>
+    <div class="coins" id="coins" title="Je coins">🪙 <span id="coinCount">0</span></div>
+    <div class="buttons">
+      <button id="btnGarage" title="Garage (upgrades)">🔧</button>
+      <button id="btnCompact" title="Klein / groot">▾</button>
+      <button id="btnClose" class="close" title="Afsluiten">✕</button>
+    </div>
+  </header>
+
+  <!-- STATUS: in welke app zit je, race of pits -->
+  <div id="status" class="status pits">
+    <span class="pill" id="modeText">PITS</span>
+    <span class="app" id="appText">…</span>
+  </div>
+
+  <!-- DE RACEBAAN (wordt getekend in game.js) -->
+  <div id="trackWrap">
+    <canvas id="track"></canvas>
+  </div>
+
+  <!-- HUD: snelheid, ronde, voortgang -->
+  <div class="hud">
+    <div class="speed"><span id="speed">0</span><small>km/u</small></div>
+    <div class="lap">
+      <div class="lapTop">RONDE <span id="lapNum">1</span><span id="drs" class="drs">DRS</span></div>
+      <div class="bar"><div id="lapBar"></div></div>
+    </div>
+  </div>
+
+  <!-- GARAGE: upgrades + autokleuren kopen (verborgen tot je op 🔧 klikt) -->
+  <div id="garage" class="hidden">
+    <h3>Upgrades</h3>
+    <div id="upgradeList"></div>
+    <h3>Autokleur</h3>
+    <div id="liveryList" class="liveries"></div>
+    <h3>Statistieken</h3>
+    <div id="stats" class="stats"></div>
+  </div>
+</div>
+
+<!-- Volgorde is belangrijk: progress -> game -> app -->
+<script src="progress.js"></script>
+<script src="game.js"></script>
+<script src="app.js"></script>
+</body>
+</html>
