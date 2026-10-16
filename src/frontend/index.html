@@ -12,49 +12,75 @@
 
   <!-- BOVENBALK: hiermee sleep je het venster (data-tiny-drag) -->
   <header data-tiny-drag>
-    <div class="logo">🏎️ <b>F1</b> CODING</div>
-    <div class="coins" id="coins" title="Je coins">🪙 <span id="coinCount">0</span></div>
+    <div class="brand"><span class="f1">F1</span><span class="title">CODING</span></div>
+    <div class="coins" id="coins" title="Je coins"><i class="coin"></i><span id="coinCount">0</span></div>
     <div class="buttons">
-      <button id="btnGarage" title="Garage (upgrades)">🔧</button>
-      <button id="btnCompact" title="Klein / groot">▾</button>
-      <button id="btnClose" class="close" title="Afsluiten">✕</button>
+      <button id="btnGarage" data-icon="wrench" title="Garage (upgrades)"></button>
+      <button id="btnCompact" data-icon="chevronDown" title="Klein / groot"></button>
+      <button id="btnClose" data-icon="close" class="close" title="Afsluiten"></button>
     </div>
   </header>
 
-  <!-- STATUS: in welke app zit je, race of pits -->
+  <!-- STATUS: race of pits, in welke app je zit, en je streak -->
   <div id="status" class="status pits">
-    <span class="pill" id="modeText">PITS</span>
+    <span class="chip" id="modeText">PITS</span>
     <span class="app" id="appText">…</span>
+    <span class="streak" id="streak" title="Streak: hoe langer je achter elkaar codeert, hoe meer coins">×1.0</span>
   </div>
 
-  <!-- DE RACEBAAN (wordt getekend in game.js) -->
-  <div id="trackWrap">
+  <!-- DE RACEBAAN (wordt getekend in render.js) + overlays -->
+  <div id="stage">
     <canvas id="track"></canvas>
+    <div id="lights" class="lights"><i></i><i></i><i></i><i></i><i></i></div>
+    <div id="banner" class="banner"></div>
+    <div id="hint" class="hint"></div>
   </div>
 
-  <!-- HUD: snelheid, ronde, voortgang -->
+  <!-- HUD: snelheid, ronde, brandstof en ERS -->
   <div class="hud">
-    <div class="speed"><span id="speed">0</span><small>km/u</small></div>
-    <div class="lap">
-      <div class="lapTop">RONDE <span id="lapNum">1</span><span id="drs" class="drs">DRS</span></div>
-      <div class="bar"><div id="lapBar"></div></div>
+    <div class="speedo">
+      <span id="speed">0</span>
+      <small>KM/H</small>
+    </div>
+    <div class="lapbox">
+      <div class="lapTop">
+        <span>LAP <b id="lapNum">1</b></span>
+        <span class="lapTime" id="lapTime">0:00.0</span>
+      </div>
+      <div class="lapbar"><div id="lapBar"></div><i style="left:33.3%"></i><i style="left:66.6%"></i></div>
+      <div class="gauges">
+        <div class="gauge fuel" title="Brandstof = denktijd. Elke toets vult je tank.">
+          <label>FUEL <span id="fuelText">0:00</span></label>
+          <div class="g"><div id="fuelBar"></div></div>
+        </div>
+        <div class="gauge ers" title="ERS-boost. Typen laadt de batterij op.">
+          <label>ERS <span id="ersText">0%</span></label>
+          <div class="g"><div id="ersBar"></div></div>
+        </div>
+      </div>
     </div>
   </div>
 
-  <!-- GARAGE: upgrades + autokleuren kopen (verborgen tot je op 🔧 klikt) -->
+  <!-- GARAGE: upgrades, autokleuren en statistieken (verborgen tot je op de moersleutel klikt) -->
   <div id="garage" class="hidden">
-    <h3>Upgrades</h3>
-    <div id="upgradeList"></div>
-    <h3>Autokleur</h3>
-    <div id="liveryList" class="liveries"></div>
-    <h3>Statistieken</h3>
-    <div id="stats" class="stats"></div>
+    <nav class="tabs">
+      <button data-tab="upgrades" class="active">Upgrades</button>
+      <button data-tab="liveries">Lak</button>
+      <button data-tab="stats">Stats</button>
+    </nav>
+    <div class="tab" id="tab-upgrades"></div>
+    <div class="tab hidden" id="tab-liveries"></div>
+    <div class="tab hidden" id="tab-stats"></div>
   </div>
+
+  <!-- Meldingen (bijv. "Upgrade gekocht") -->
+  <div id="toast" class="toast"></div>
 </div>
 
-<!-- Volgorde is belangrijk: progress -> game -> app -->
+<!-- Volgorde is belangrijk: progress -> game -> render -> app -->
 <script src="progress.js"></script>
 <script src="game.js"></script>
+<script src="render.js"></script>
 <script src="app.js"></script>
 </body>
 </html>

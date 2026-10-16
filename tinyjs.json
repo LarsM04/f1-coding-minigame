@@ -2,7 +2,7 @@
   "$schema": "https://tinyjs.app/schema/tinyjs.schema.json",
   "name": "f1-coding-minigame",
   "title": "F1 Coding Minigame",
-  "size": "360x250",
+  "size": "360x300",
   "id": "com.lars.f1-coding-minigame",
   "version": "0.1.0",
   "minTinyjsVersion": "0.57.6",

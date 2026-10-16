@@ -1,20 +1,31 @@
 /* =====================================================================
-   STYLING van het widget
+   STYLING van het widget (F1 TV-stijl)
    Het venster is transparant (zie tinyjs.json "chrome"), dus alles
    buiten #widget is doorzichtig.
    ===================================================================== */
 
-/* Kleuren op één plek, makkelijk aan te passen */
+/* ---------- Lettertype: Titillium Web (in de map fonts/, OFL-licentie) ---------- */
+@font-face { font-family: 'Titillium Web'; font-weight: 400; src: url(fonts/TitilliumWeb-Regular.ttf); }
+@font-face { font-family: 'Titillium Web'; font-weight: 600; src: url(fonts/TitilliumWeb-SemiBold.ttf); }
+@font-face { font-family: 'Titillium Web'; font-weight: 700; font-style: italic; src: url(fonts/TitilliumWeb-BoldItalic.ttf); }
+@font-face { font-family: 'Titillium Web'; font-weight: 900; src: url(fonts/TitilliumWeb-Black.ttf); }
+
+/* ---------- Kleuren op één plek, makkelijk aan te passen ---------- */
 :root {
-  --bg: rgba(16, 18, 26, 0.94);
-  --panel: #1c2030;
-  --line: #2c3246;
-  --text: #eef0f6;
-  --muted: #8b93a7;
+  --bg: #0f1117;
+  --bg-2: #171a23;
+  --card: #1c2030;
+  --card-2: #232839;
+  --line: rgba(255, 255, 255, 0.08);
+  --text: #f2f4f8;
+  --muted: #8a92a6;
   --f1-red: #e10600;
   --race: #19d16b;
   --pits: #ff9f1a;
   --gold: #ffd400;
+  --purple: #b43cff;
+  --ers: #3fb6ff;
+  --font: 'Titillium Web', 'Segoe UI', sans-serif;
 }
 
 * { box-sizing: border-box; }
@@ -23,146 +34,340 @@ html, body {
   margin: 0;
   background: transparent;
   color: var(--text);
-  font: 12px "Segoe UI", system-ui, sans-serif;
+  font: 600 12px var(--font);
   user-select: none;
   overflow: hidden;
 }
 
+button { font-family: var(--font); }
+
 #widget {
   position: relative;
   width: 360px;
-  background: var(--bg);
-  border: 1px solid var(--line);
+  background: linear-gradient(180deg, var(--bg-2), var(--bg));
+  border: 1px solid rgba(255, 255, 255, 0.1);
   border-radius: 14px;
   overflow: hidden;
   padding-bottom: 8px;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.06);
 }
 
-/* ---------- Bovenbalk ---------- */
+/* ---------- Bovenbalk (carbon-look) ---------- */
 header {
+  position: relative;
   display: flex;
   align-items: center;
   gap: 8px;
-  height: 34px;
-  padding: 0 6px 0 10px;
-  background: linear-gradient(90deg, var(--f1-red), #8a0400 70%, #3a0200);
+  height: 36px;
+  padding: 0 6px 0 0;
+  background-color: #12141a;
+  background-image:
+    linear-gradient(45deg, rgba(255,255,255,.04) 25%, transparent 25%, transparent 75%, rgba(255,255,255,.04) 75%),
+    linear-gradient(45deg, rgba(255,255,255,.04) 25%, transparent 25%, transparent 75%, rgba(255,255,255,.04) 75%);
+  background-size: 6px 6px;
+  background-position: 0 0, 3px 3px;
   cursor: grab;
 }
-.logo { font-weight: 800; font-style: italic; letter-spacing: 0.5px; flex: 1; }
-.logo b { font-size: 14px; }
+header::after { /* rode lijn onder de balk */
+  content: '';
+  position: absolute; left: 0; right: 0; bottom: 0; height: 2px;
+  background: linear-gradient(90deg, var(--f1-red), var(--f1-red) 40%, transparent);
+}
+.brand { display: flex; align-items: center; height: 100%; flex: 1; }
+.brand .f1 {
+  display: flex; align-items: center;
+  height: 100%;
+  padding: 0 14px 0 12px;
+  margin-right: 6px;
+  background: var(--f1-red);
+  clip-path: polygon(0 0, 100% 0, calc(100% - 10px) 100%, 0 100%);
+  font: 900 italic 20px var(--font);
+  letter-spacing: -0.5px;
+}
+.brand .title { font: 900 italic 15px var(--font); letter-spacing: 2px; }
+
 .coins {
-  font-weight: 800;
-  background: rgba(0, 0, 0, 0.35);
-  border-radius: 10px;
-  padding: 2px 8px;
+  display: flex; align-items: center; gap: 5px;
+  font: 900 14px var(--font);
   color: var(--gold);
-  transition: transform 0.12s;
+  background: rgba(0, 0, 0, 0.45);
+  border: 1px solid rgba(255, 212, 0, 0.25);
+  border-radius: 999px;
+  padding: 1px 10px 1px 4px;
+  transition: transform 0.12s, box-shadow 0.12s;
 }
-.coins.bump { transform: scale(1.18); }
-.buttons { display: flex; gap: 2px; }
+.coins.bump { transform: scale(1.15); box-shadow: 0 0 12px rgba(255, 212, 0, 0.5); }
+.coin {
+  display: inline-block; width: 14px; height: 14px; border-radius: 50%;
+  background: radial-gradient(circle at 35% 35%, #fff6b0, #ffd400 45%, #c89400);
+  box-shadow: inset 0 0 0 1.5px #b8860b;
+  flex: none;
+}
+
+.buttons { display: flex; gap: 3px; }
 .buttons button {
-  width: 24px; height: 24px;
-  border: 0; border-radius: 6px;
-  background: rgba(0, 0, 0, 0.25);
-  color: #fff; font-size: 12px; cursor: pointer;
+  display: grid; place-items: center;
+  width: 26px; height: 24px;
+  border: 1px solid rgba(255, 255, 255, 0.08); border-radius: 6px;
+  background: rgba(255, 255, 255, 0.05);
+  color: #cfd3dc; cursor: pointer;
+  transition: background 0.15s, color 0.15s;
 }
-.buttons button:hover { background: rgba(0, 0, 0, 0.5); }
-.buttons button.close:hover { background: #000; }
-.buttons button.active { background: rgba(0, 0, 0, 0.6); }
+.buttons button svg { width: 14px; height: 14px; }
+.buttons button:hover { background: rgba(255, 255, 255, 0.14); color: #fff; }
+.buttons button.active { background: var(--f1-red); color: #fff; border-color: transparent; }
+.buttons button.close:hover { background: var(--f1-red); color: #fff; }
 
 /* ---------- Status (race / pits) ---------- */
 .status {
   display: flex; align-items: center; gap: 8px;
-  padding: 6px 10px 4px;
-  font-size: 11px;
+  padding: 7px 10px 5px;
 }
-.status .pill {
-  font-weight: 800; font-style: italic;
-  padding: 1px 8px; border-radius: 8px;
+.status .chip {
+  font: 900 italic 11px var(--font);
+  letter-spacing: 1px;
+  padding: 1px 10px;
   color: #000;
+  clip-path: polygon(6px 0, 100% 0, calc(100% - 6px) 100%, 0 100%);
 }
-.status.race .pill { background: var(--race); }
-.status.pits .pill { background: var(--pits); }
-.status .app { color: var(--muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.status.race .chip { background: var(--race); }
+.status.pits .chip { background: var(--pits); }
+.status .app {
+  flex: 1;
+  color: var(--muted); font-weight: 600;
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.streak {
+  font: 900 italic 12px var(--font);
+  color: #5d6578;
+  transition: color 0.3s, transform 0.2s;
+}
+.streak.on { color: var(--gold); text-shadow: 0 0 8px rgba(255, 212, 0, 0.45); }
+.streak.pop { transform: scale(1.35); }
 
 /* ---------- Racebaan ---------- */
-#trackWrap {
-  margin: 2px 8px 0;
-  border-radius: 8px;
+#stage {
+  position: relative;
+  margin: 0 8px;
+  height: 140px;
+  border-radius: 9px;
   overflow: hidden;
-  height: 120px;
+  box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.08), 0 4px 14px rgba(0, 0, 0, 0.4);
 }
 #track { display: block; }
 
+/* Start-lampen (5 rode lampen die uitgaan: "lights out!") */
+.lights {
+  position: absolute; top: 8px; left: 50%;
+  display: flex; gap: 5px;
+  padding: 5px 8px;
+  background: #0b0c10;
+  border-radius: 6px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.5);
+  transform: translate(-50%, -60px);
+  transition: transform 0.25s ease;
+}
+.lights i { width: 11px; height: 11px; border-radius: 50%; background: #3a0000; }
+.lights.show { transform: translate(-50%, 0); }
+.lights.show i { background: radial-gradient(circle at 40% 40%, #ff6b6b, #e10600); box-shadow: 0 0 8px #ff1a1a; }
+.lights.show.out i { background: #3a0000; box-shadow: none; }
+
+/* Banner (bijv. "LAP 12" of "BESTE RONDE") in F1 TV-stijl */
+.banner {
+  position: absolute; top: 10px; left: 0;
+  display: flex; align-items: stretch;
+  font-family: var(--font);
+  transform: translateX(-110%);
+  transition: transform 0.35s cubic-bezier(.2, .9, .3, 1.2);
+  filter: drop-shadow(0 3px 6px rgba(0, 0, 0, 0.5));
+}
+.banner.show { transform: translateX(0); }
+.banner .tag {
+  background: var(--f1-red);
+  font: 900 italic 12px var(--font);
+  padding: 4px 10px 4px 12px;
+}
+.banner .main {
+  background: rgba(10, 11, 15, 0.92);
+  padding: 2px 14px 2px 10px;
+  display: flex; align-items: center; gap: 8px;
+  clip-path: polygon(0 0, 100% 0, calc(100% - 10px) 100%, 0 100%);
+}
+.banner .main b { font: 900 italic 15px var(--font); }
+.banner .main span { color: var(--gold); font: 900 12px var(--font); }
+.banner.purple .tag { background: var(--purple); }
+.banner.purple .main b { color: #e2b4ff; }
+.banner.green .tag { background: var(--race); color: #000; }
+
+/* Hint onderin de baan */
+.hint {
+  position: absolute; left: 50%; top: 48px;
+  transform: translateX(-50%);
+  padding: 3px 12px;
+  border-radius: 999px;
+  background: rgba(8, 10, 16, 0.82);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  font: 700 italic 11px var(--font);
+  white-space: nowrap;
+  opacity: 0;
+  transition: opacity 0.3s;
+  pointer-events: none;
+}
+.hint.show { opacity: 1; }
+.hint.pulse { animation: pulse 1.6s ease-in-out infinite; }
+@keyframes pulse { 50% { border-color: rgba(255, 212, 0, 0.7); } }
+
 /* ---------- HUD ---------- */
 .hud {
-  display: flex; align-items: center; gap: 12px;
-  padding: 6px 10px 0;
+  display: flex; align-items: center; gap: 10px;
+  padding: 8px 10px 0;
 }
-.speed { font-size: 22px; font-weight: 800; font-style: italic; min-width: 80px; }
-.speed small { font-size: 10px; color: var(--muted); margin-left: 3px; font-style: normal; }
-.lap { flex: 1; }
-.lapTop { font-size: 10px; color: var(--muted); font-weight: 700; display: flex; gap: 6px; align-items: center; }
-.lapTop span#lapNum { color: var(--text); }
-.drs {
-  margin-left: auto;
-  font-size: 9px; padding: 0 5px; border-radius: 4px;
-  background: #2a2f40; color: #555d73;
+.speedo {
+  display: flex; flex-direction: column; align-items: flex-end;
+  min-width: 74px;
+  padding-right: 10px;
+  border-right: 1px solid var(--line);
+  line-height: 0.9;
 }
-.drs.on { background: #00c86f; color: #001a0d; }
-.bar { height: 6px; background: #2a2f40; border-radius: 3px; margin-top: 3px; overflow: hidden; }
-.bar div { height: 100%; width: 0; background: linear-gradient(90deg, var(--f1-red), var(--gold)); }
+.speedo span { font: 900 italic 30px var(--font); letter-spacing: -1px; font-variant-numeric: tabular-nums; }
+.speedo small { font: 700 italic 9px var(--font); color: var(--muted); letter-spacing: 1.5px; margin-top: 2px; }
+
+.lapbox { flex: 1; min-width: 0; }
+.lapTop { display: flex; justify-content: space-between; align-items: baseline; font: 700 italic 10px var(--font); color: var(--muted); letter-spacing: 1px; }
+.lapTop b { color: var(--text); font: 900 italic 13px var(--font); }
+.lapTime { font: 700 12px var(--font); color: var(--text); font-variant-numeric: tabular-nums; letter-spacing: 0.5px; }
+.lapbar { position: relative; height: 5px; margin: 3px 0 6px; background: #262b3a; border-radius: 3px; overflow: hidden; }
+.lapbar div { height: 100%; width: 0; background: linear-gradient(90deg, var(--f1-red), #ff6a3d); border-radius: 3px; }
+.lapbar i { position: absolute; top: 0; width: 1px; height: 100%; background: rgba(0, 0, 0, 0.6); }
+
+.gauges { display: flex; gap: 10px; }
+.gauge { flex: 1; }
+.gauge label { display: flex; justify-content: space-between; font: 700 italic 8.5px var(--font); color: var(--muted); letter-spacing: 1px; }
+.gauge label span { font-style: normal; color: var(--text); }
+.gauge .g { height: 4px; margin-top: 2px; background: #262b3a; border-radius: 2px; overflow: hidden; }
+.gauge .g div { height: 100%; width: 0; border-radius: 2px; transition: background 0.3s; }
+.gauge.fuel .g div { background: var(--race); }
+.gauge.fuel.low .g div { background: var(--pits); }
+.gauge.fuel.empty .g div { background: var(--f1-red); }
+.gauge.ers .g div { background: linear-gradient(90deg, #2b6cff, var(--ers)); box-shadow: 0 0 6px var(--ers); }
 
 /* ---------- Klein venster (compact) ---------- */
 #widget.compact .status,
-#widget.compact #trackWrap { display: none; }
+#widget.compact #stage { display: none; }
 
 /* ---------- Garage ---------- */
 #garage {
   position: absolute;
-  top: 34px; left: 0; right: 0; bottom: 0;
-  background: var(--bg);
-  overflow-y: auto;
-  padding: 4px 10px 10px;
+  top: 36px; left: 0; right: 0; bottom: 0;
+  background: linear-gradient(180deg, var(--bg-2), var(--bg));
+  display: flex; flex-direction: column;
+  animation: slideUp 0.2s ease;
 }
+@keyframes slideUp { from { transform: translateY(12px); opacity: 0; } }
 #garage.hidden { display: none; }
-#garage h3 {
-  margin: 8px 0 4px;
-  font-size: 11px; text-transform: uppercase; letter-spacing: 1px;
-  color: var(--muted);
-}
-.upg {
-  display: flex; align-items: center; gap: 8px;
-  background: var(--panel); border-radius: 8px;
-  padding: 5px 6px 5px 8px; margin-bottom: 4px;
-}
-.upg .icon { font-size: 16px; }
-.upg .info { flex: 1; min-width: 0; }
-.upg .name { font-weight: 700; }
-.upg .lvl { color: var(--muted); font-size: 10px; margin-left: 4px; }
-.upg .desc { color: var(--muted); font-size: 10px; }
-.buy {
+
+.tabs { display: flex; gap: 4px; padding: 8px 10px 6px; border-bottom: 1px solid var(--line); }
+.tabs button {
+  flex: 1;
   border: 0; border-radius: 6px;
-  background: var(--gold); color: #000;
-  font-weight: 800; padding: 4px 8px; cursor: pointer;
-  min-width: 58px;
+  background: transparent; color: var(--muted);
+  font: 900 italic 11px var(--font); letter-spacing: 1px; text-transform: uppercase;
+  padding: 4px 0; cursor: pointer;
 }
-.buy:disabled { background: #3a4055; color: #7c849a; cursor: default; }
+.tabs button:hover { color: var(--text); }
+.tabs button.active { background: var(--card); color: var(--text); box-shadow: inset 0 -2px 0 var(--f1-red); }
 
-.liveries { display: flex; flex-wrap: wrap; gap: 6px; }
+.tab { flex: 1; overflow-y: auto; padding: 8px 10px 10px; }
+.tab.hidden { display: none; }
+.tab::-webkit-scrollbar { width: 6px; }
+.tab::-webkit-scrollbar-thumb { background: #353b50; border-radius: 3px; }
+
+/* Upgrade-kaart */
+.upg {
+  display: flex; align-items: center; gap: 9px;
+  background: var(--card);
+  border: 1px solid var(--line);
+  border-radius: 9px;
+  padding: 7px 7px 7px 7px; margin-bottom: 5px;
+}
+.upg .icon {
+  display: grid; place-items: center;
+  width: 30px; height: 30px; border-radius: 8px; flex: none;
+  color: #fff;
+}
+.upg .icon svg { width: 17px; height: 17px; }
+.upg .info { flex: 1; min-width: 0; }
+.upg .name { font: 700 italic 12px var(--font); }
+.upg .desc { color: var(--muted); font-size: 10px; font-weight: 400; line-height: 1.2; margin-top: 1px; }
+.pips { display: flex; gap: 2px; margin-top: 4px; }
+.pips i { flex: 1; height: 3px; border-radius: 1px; background: #30364a; }
+
+.buy {
+  display: flex; align-items: center; gap: 4px; justify-content: center;
+  min-width: 64px;
+  border: 0; border-radius: 7px;
+  background: linear-gradient(180deg, #ffe14d, #ffc400);
+  color: #1a1400;
+  font: 900 12px var(--font);
+  padding: 5px 8px; cursor: pointer;
+  box-shadow: 0 2px 0 #b38900;
+  transition: transform 0.08s;
+}
+.buy:active { transform: translateY(1px); box-shadow: 0 1px 0 #b38900; }
+.buy .coin { width: 11px; height: 11px; }
+.buy:disabled { background: #2a2f40; color: #6b7388; box-shadow: none; cursor: default; }
+.buy:disabled .coin { filter: grayscale(1) brightness(0.6); }
+.buy.max { background: #2a2f40; color: var(--race); }
+
+/* Autokleur-kaarten */
+.liveries { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
 .livery {
-  border: 2px solid transparent; border-radius: 8px;
-  background: var(--panel); color: var(--text);
-  padding: 4px 6px; cursor: pointer; font-size: 10px;
-  display: flex; align-items: center; gap: 5px;
+  display: flex; flex-direction: column; align-items: stretch;
+  border: 1px solid var(--line); border-radius: 9px;
+  background: var(--card); color: var(--text);
+  padding: 4px 6px 6px; cursor: pointer;
+  transition: border-color 0.15s, background 0.15s;
 }
-.livery .swatch { width: 14px; height: 14px; border-radius: 3px; }
-.livery.selected { border-color: var(--gold); }
-.livery.locked { opacity: 0.6; }
+.livery:hover { background: var(--card-2); }
+.livery canvas { display: block; margin: 0 auto; }
+.livery .row { display: flex; justify-content: space-between; align-items: center; margin-top: 2px; }
+.livery .lname { font: 700 italic 11px var(--font); }
+.livery .price { display: flex; align-items: center; gap: 3px; font: 900 10px var(--font); color: var(--gold); }
+.livery .price .coin { width: 10px; height: 10px; }
+.livery .price.owned { color: var(--muted); font-weight: 700; }
+.livery.selected { border-color: var(--gold); box-shadow: inset 0 0 0 1px var(--gold); }
+.livery.selected .price { color: var(--gold); }
+.livery.locked canvas { filter: saturate(0.35) brightness(0.75); }
+.livery.cant { opacity: 0.55; cursor: default; }
 
-.stats { display: grid; grid-template-columns: 1fr auto; gap: 2px 10px; color: var(--muted); }
-.stats b { color: var(--text); text-align: right; }
+/* Statistieken (zoals een timing-scherm) */
+.stats { display: flex; flex-direction: column; gap: 3px; }
+.stat {
+  display: flex; justify-content: space-between; align-items: center;
+  background: var(--card); border-radius: 6px;
+  padding: 5px 10px;
+  border-left: 3px solid var(--f1-red);
+}
+.stat span { color: var(--muted); font-weight: 600; }
+.stat b { font: 900 italic 13px var(--font); font-variant-numeric: tabular-nums; }
+.stat.purple { border-left-color: var(--purple); }
+.stat.purple b { color: #e2b4ff; }
+.stat.gold { border-left-color: var(--gold); }
+.stat.gold b { color: var(--gold); }
 
-/* Scrollbar in de garage */
-#garage::-webkit-scrollbar { width: 6px; }
-#garage::-webkit-scrollbar-thumb { background: #3a4055; border-radius: 3px; }
+/* ---------- Toast-melding ---------- */
+.toast {
+  position: absolute; left: 50%; bottom: 10px;
+  transform: translate(-50%, 30px);
+  padding: 5px 14px;
+  border-radius: 999px;
+  background: var(--race); color: #001a0d;
+  font: 900 italic 11px var(--font); letter-spacing: 0.5px;
+  opacity: 0;
+  transition: transform 0.25s, opacity 0.25s;
+  pointer-events: none;
+  white-space: nowrap;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
+}
+.toast.show { transform: translate(-50%, 0); opacity: 1; }
+.toast.bad { background: var(--f1-red); color: #fff; }

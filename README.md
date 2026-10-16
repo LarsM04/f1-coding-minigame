@@ -3,12 +3,16 @@
 Een klein F1-spelletje dat **altijd bovenop je scherm** staat en meespeelt terwijl je codeert.
 
 - Zit je in een **coding-app** (VS Code, Visual Studio, een terminal...)? Dan staat je auto op de baan: **🏁 RACE**.
-  Elke toets die je typt geeft gas.
-- Zit je in een **andere app** (Brave, Discord, Spotify...)? Dan sta je in **🔧 DE PITS** en verdien je niks.
-- Rijden levert **coins** op:
-  - elke volle ronde = 10 coins
-  - onderweg liggen coins op de baan die je auto automatisch oppakt
-- Met coins koop je in de **garage (🔧-knop)** upgrades en nieuwe autokleuren. Je progressie wordt opgeslagen.
+- Zit je in een **andere app** (Brave, Discord, Spotify...)? Dan staat je auto in **🔧 DE GARAGE** en verdien je niks.
+- Het gaat om **hoe lang je codeert**, niet hoe snel je typt:
+  - **FUEL (denktijd)**: elke toets vult je tank. Zolang er brandstof is rijdt je auto op kruissnelheid,
+    ook als je even nadenkt. Typ je een minuut niks, dan valt hij stil.
+  - **ERS**: typen laadt je batterij op → extra snelheid (een bonus, niet verplicht).
+  - **STREAK**: elke minuut achter elkaar coderen = +0.1× coins (max ×2). Een minuut stilstaan of in de pits = streak weg.
+- Rijden levert **coins** op: 5 per ronde (±30 sec) + coins die op de baan liggen.
+- Elke ronde heeft een **rondetijd**; een nieuw record geeft een paarse **BESTE RONDE**.
+- Met coins koop je in de **garage (moersleutel-knop)** upgrades en autokleuren. Je progressie wordt opgeslagen.
+- De baan verandert mee met de **echte tijd**: overdag, zonsondergang of een nachtrace met lichtmasten.
 
 Gemaakt met [TinyJS](https://tinyjs.app): kleine desktop-apps (~6 MB) met een JavaScript-backend op
 **txiki.js** (dus **geen Node.js**) en een venster dat de ingebouwde webview van Windows gebruikt (WebView2).
@@ -46,20 +50,19 @@ Gemaakt met [TinyJS](https://tinyjs.app): kleine desktop-apps (~6 MB) met een Ja
 | Knop | Wat doet het? |
 |---|---|
 | Bovenbalk slepen | Venster verplaatsen (de positie wordt onthouden) |
-| 🔧 | Garage openen/sluiten (upgrades + autokleuren + statistieken) |
-| ▾ / ▴ | Klein venster (alleen snelheid en ronde) / groot venster |
-| ✕ | Opslaan en afsluiten |
+| Moersleutel | Garage openen/sluiten (tabbladen: Upgrades, Lak, Stats) |
+| Pijltje | Klein venster (alleen de HUD) / groot venster |
+| Kruisje | Opslaan en afsluiten |
 
 ### Upgrades
 
 | Upgrade | Effect |
 |---|---|
-| 🔥 Motor | Hogere topsnelheid + meer boost per toets |
-| 🪽 Aerodynamica | Je auto remt minder af als je stopt met typen |
-| 💼 Sponsors | +20% coins per level |
-| 📡 Coin-radar | Er liggen vaker coins op de baan |
-
-**DRS**: rij je boven 85% van je topsnelheid, dan gaat DRS aan en rij je 20% sneller vooruit.
+| Motor | +12 km/u kruissnelheid → snellere rondes |
+| Brandstoftank | +20 sec denktijd voordat je auto stilvalt |
+| ERS-batterij | Typen laadt meer op + grotere boost |
+| Sponsors | +20% coins per level |
+| Coin-radar | Er liggen vaker coins op de baan |
 
 ---
 
@@ -77,8 +80,10 @@ F1 coding minigame/
 │       ├── index.html           ← opbouw van het widget (knoppen, baan, HUD, garage)
 │       ├── style.css            ← kleuren en opmaak (kleuren staan bovenaan in :root)
 │       ├── progress.js          ← ⭐ coins, UPGRADES, LIVERIES (autokleuren), opslaan
-│       ├── game.js              ← ⭐ CONFIG (snelheid/balans), race-logica, auto tekenen
-│       └── app.js               ← opstarten, game-loop, knoppen, garage-scherm
+│       ├── game.js              ← ⭐ CONFIG (balans), race-logica: brandstof, ERS, streak, rondes
+│       ├── render.js            ← ⭐ alle graphics: baan, tribunes, auto, garage, dag/nacht
+│       ├── app.js               ← opstarten, game-loop, HUD, banners, garage-scherm
+│       └── fonts/               ← lettertype Titillium Web (gratis, OFL-licentie)
 ├── assets/icon.png              ← icoon van de app
 ├── types/                       ← type-informatie voor je editor (autocomplete)
 └── .claude/ en .agents/         ← TinyJS-uitleg voor AI-assistenten (niet nodig voor de game)
@@ -90,13 +95,18 @@ F1 coding minigame/
 |---|---|
 | een **coding-app toevoegen** | `src/backend/coding-apps.js` → lijst `CODING_APPS` |
 | een app **negeren** (blijft vorige app) | `src/backend/coding-apps.js` → lijst `IGNORED_APPS` |
-| de auto **sneller/langzamer** maken | `src/frontend/game.js` → `CONFIG` (bovenaan) |
+| de auto **sneller/langzamer** maken | `src/frontend/game.js` → `CONFIG.BASE_CRUISE` |
+| **langer/korter denktijd** | `src/frontend/game.js` → `CONFIG.BASE_THINK_TIME` |
 | meer/minder **coins per ronde** | `src/frontend/game.js` → `CONFIG.LAP_COINS` |
 | een ronde **langer/korter** maken | `src/frontend/game.js` → `CONFIG.LAP_LENGTH` |
+| de **streak** aanpassen | `src/frontend/game.js` → `CONFIG.STREAK_*` |
 | **prijzen van upgrades** veranderen | `src/frontend/progress.js` → `UPGRADES` |
 | een **nieuwe autokleur** toevoegen | `src/frontend/progress.js` → `LIVERIES` |
-| het **uiterlijk van de auto** veranderen | `src/frontend/game.js` → functie `drawCar()` |
-| het **uiterlijk van de baan** veranderen | `src/frontend/game.js` → functie `gameDraw()` |
+| het **uiterlijk van de auto** veranderen | `src/frontend/render.js` → functie `drawCarSide()` |
+| de **baan / tribunes** veranderen | `src/frontend/render.js` → `drawTrackScene()` en `draw...Layer()` |
+| de **teksten op de reclameborden** | `src/frontend/render.js` → lijst `BOARDS` |
+| de **kleuren van dag/nacht** | `src/frontend/render.js` → `PALETTES` en `currentPeriod()` |
+| de **garage** (pits) veranderen | `src/frontend/render.js` → functie `drawGarageScene()` |
 | **kleuren van het venster** veranderen | `src/frontend/style.css` → `:root` (bovenaan) |
 | de **venstergrootte** veranderen | `tinyjs.json` → `size` + `src/frontend/style.css` → `#widget` |
 | welke **toetsen** meetellen | `src/backend/keyboard.js` → lijst `KEYS` |
@@ -115,8 +125,9 @@ F1 coding minigame/
 ```
  ┌──────────── BACKEND (txiki.js) ────────────┐        ┌────────── FRONTEND (venster) ──────────┐
  │ keyboard.js  → telt toetsen elke 15 ms      │ push   │ app.js      → ontvangt 'keys' + 'app'   │
- │ main.js      → elke 400 ms: actieve app?    │ ─────► │ game.js     → snelheid, afstand, coins  │
- │ coding-apps  → is het een coding-app?       │        │ progress.js → upgrades, opslaan         │
+ │ main.js      → elke 400 ms: actieve app?    │ ─────► │ game.js     → brandstof, ERS, coins     │
+ │ coding-apps  → is het een coding-app?       │        │ render.js   → tekent alles op canvas    │
+ │                                             │        │ progress.js → upgrades, opslaan         │
  └─────────────────────────────────────────────┘        └─────────────────────────────────────────┘
 ```
 
