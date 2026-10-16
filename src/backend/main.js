@@ -1,9 +1,10 @@
 // =====================================================================
 //  BACKEND (draait op txiki.js, NIET op Node.js!)
 //
-//  De backend is de "sensor" van de game. Hij doet twee dingen:
-//    1. Toetsaanslagen tellen          (zie keyboard.js)
-//    2. Kijken welke app actief is     (zie coding-apps.js)
+//  De backend is de "sensor" van de game. Hij doet drie dingen:
+//    1. Toetsaanslagen + sneltoetsen tellen   (zie keyboard.js)
+//    2. Kijken welke app actief is            (zie coding-apps.js)
+//    3. Git-acties zien: commit, push, ...    (zie git-watcher.js)
 //  En stuurt dat door naar de frontend (het venster) met app.push().
 //
 //  Alle game-logica (snelheid, coins, upgrades) zit in de frontend:
@@ -12,6 +13,7 @@
 
 import { createKeyCounter } from './keyboard.js';
 import { isCodingApp, isIgnored, normalizeAppName } from './coding-apps.js';
+import { createGitWatcher } from './git-watcher.js';
 
 // Functies die de frontend kan aanroepen met tiny.api.call('naam').
 export const api = {
@@ -41,7 +43,11 @@ async function readFrontApp(app) {
 
 // init() wordt 1x aangeroepen als het venster open is.
 export function init(app) {
-  const keys = createKeyCounter(app);
+  // --- Sneltoetsen (Ctrl+S, F5) direct doorsturen ---
+  const keys = createKeyCounter(app, (name) => app.push('shortcut', { name }));
+
+  // --- Git-acties (commit, push, checkout, pull) direct doorsturen ---
+  createGitWatcher((ev) => app.push('git', ev));
 
   // --- Elke 100 ms: toetsaanslagen doorsturen naar de frontend ---
   setInterval(() => {

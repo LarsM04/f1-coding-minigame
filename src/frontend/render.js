@@ -146,6 +146,16 @@ function gameDraw(dt) {
     drawGarageScene();
     ctx.globalAlpha = 1;
   }
+
+  // Confetti (bij een push of als je een GP wint) - over alles heen
+  for (const c of game.confetti) {
+    ctx.save();
+    ctx.translate(c.x, c.y);
+    ctx.rotate(c.rot);
+    ctx.fillStyle = c.color;
+    ctx.fillRect(-2.5, -1.2, 5, 2.4 * Math.abs(Math.cos(c.rot * 2)) + 0.6);
+    ctx.restore();
+  }
 }
 
 // ---------------------------------------------------------------------
@@ -207,6 +217,16 @@ function drawTrackScene(p) {
     if (x > -12 && x < W + 12) drawCoin(ctx, x, TRACK.COIN_Y + Math.sin(game.time * 3 + c.bob) * 2, p.lights);
   }
 
+  // --- Tegenstanders (op de baan achter je, iets kleiner = verder weg) ---
+  for (const r of game.rivals) {
+    ctx.save();
+    ctx.translate(r.x, TRACK.GROUND_Y - 7);
+    ctx.scale(0.86, 0.86);
+    ctx.filter = 'brightness(0.78)';
+    drawCarSide(ctx, 0, 0, r.livery, { wheelAngle: scroll / 9, speed: game.speed });
+    ctx.restore();
+  }
+
   // --- ERS-spoor achter de auto ---
   if (ersActive()) drawErsTrail();
 
@@ -223,6 +243,7 @@ function drawTrackScene(p) {
     wheelAngle: scroll / 10,
     speed: game.speed,
     ers: ersActive(),
+    drs: drsActive(),
     time: game.time,
   });
 
@@ -239,7 +260,7 @@ function drawTrackScene(p) {
 
   // --- Zwevende "+1" teksten ---
   for (const e of floatTexts) {
-    const t = e.age / 0.9;
+    const t = e.age / 1.2;
     ctx.globalAlpha = 1 - t * t;
     drawLabel(e.text, e.x, e.y - t * 20, '#ffd400', 12);
     ctx.globalAlpha = 1;
@@ -559,10 +580,10 @@ function drawErsTrail() {
 // =====================================================================
 //  DE F1-AUTO (zijaanzicht, rijdt naar rechts)
 //  x = achterkant van de auto, gy = grond (onderkant banden)
-//  opts: wheelAngle (draaien van de wielen), speed, ers, time, blankets
+//  opts: wheelAngle (draaien van de wielen), speed, ers, drs, time, blankets
 // =====================================================================
 function drawCarSide(g, x, gy, livery, opts = {}) {
-  const { wheelAngle = 0, speed = 0, ers = false, time = 0, blankets = false } = opts;
+  const { wheelAngle = 0, speed = 0, ers = false, drs = false, time = 0, blankets = false } = opts;
   g.save();
   g.translate(x, gy);
 
@@ -578,10 +599,18 @@ function drawCarSide(g, x, gy, livery, opts = {}) {
   g.moveTo(0, -31); g.lineTo(9, -31); g.lineTo(9, -14); g.lineTo(3, -11); g.lineTo(0, -13);
   g.closePath();
   g.fill();
+  // Bovenste flap gaat omhoog als DRS open staat
   g.fillStyle = livery.accent;
-  g.fillRect(-2, -34, 14, 3);
+  g.fillRect(-2, drs ? -37 : -34, 14, 3);
   g.fillStyle = livery.main;
   g.fillRect(-1, -29, 12, 2.5);
+  if (drs) {
+    g.font = `900 italic 7px ${FONT}`;
+    g.textAlign = 'center';
+    g.textBaseline = 'middle';
+    g.fillStyle = '#19d16b';
+    g.fillText('DRS', 5, -42);
+  }
   g.fillStyle = '#222';
   g.fillRect(5, -27, 2, 14); // pyloon
   // Achterlicht (knippert als ERS aan staat, net als echt)

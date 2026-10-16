@@ -82,6 +82,11 @@ async function boot() {
   // Berichten van de backend (src/backend/main.js):
   tiny.api.on('keys', ({ n }) => gameOnKeys(n));
   tiny.api.on('app', (info) => setApp(info));
+  tiny.api.on('git', (ev) => careerOnGit(ev));                  // commit, push, ... (career.js)
+  tiny.api.on('shortcut', ({ name }) => careerOnShortcut(name)); // Ctrl+S, F5 (career.js)
+
+  // Grand Prix van vandaag klaarzetten (nieuwe dag = nieuwe GP).
+  ensureGrandPrix();
 
   // Huidige app meteen opvragen (anders wachten we op de eerste wissel).
   setApp(await tiny.api.call('currentApp'));
@@ -166,6 +171,14 @@ function updateHud() {
   setText('streak', '×' + game.streak.toFixed(1));
   $('streak').classList.toggle('on', game.streak > 1);
 
+  // Positie in de Grand Prix + DRS
+  if (save.gp) {
+    setText('pos', save.gp.won ? 'P1 🏆' : 'P' + save.gp.position);
+    $('pos').classList.toggle('top3', !save.gp.won && save.gp.position <= 3);
+    $('pos').classList.toggle('win', save.gp.won);
+  }
+  $('drs').classList.toggle('on', drsActive());
+
   // Hint op de baan (in de pits staat de uitleg op het scherm in de garage)
   let hint = '';
   if (game.mode === 'pits') hint = '';
@@ -204,6 +217,7 @@ function onLap({ lap, gained, lapTime, best }) {
   } else {
     showBanner(`LAP ${lap}`, lapTime === null ? 'VOLTOOID' : fmtLapTime(lapTime), `+${fmtCoins(gained)}`);
   }
+  careerOnLap(); // misschien een inhaalactie (career.js)
 }
 
 // Streak omhoog.
@@ -215,23 +229,64 @@ function onStreak(streak) {
 }
 
 // F1-banner die van links het beeld in schuift.
-let bannerTimer = null;
+// Komen er meerdere tegelijk (bijv. push + inhaalactie)? Dan na elkaar.
+const bannerQueue = [];
+let bannerBusy = false;
 function showBanner(tag, main, extra, variant = '') {
+  if (bannerQueue.length >= 5) bannerQueue.shift(); // niet eindeloos opstapelen
+  bannerQueue.push({ tag, main, extra, variant });
+  if (!bannerBusy) nextBanner();
+}
+
+function nextBanner() {
+  const item = bannerQueue.shift();
+  if (!item) {
+    bannerBusy = false;
+    return;
+  }
+  bannerBusy = true;
   const b = $('banner');
-  b.className = 'banner ' + variant;
+  b.className = 'banner ' + item.variant;
   b.textContent = '';
-  const t = el('div', 'tag', tag);
   const m = el('div', 'main');
-  m.append(el('b', '', main));
-  if (extra) {
-    const s = el('span', '', extra + ' ');
+  m.append(el('b', '', item.main));
+  if (item.extra) {
+    const s = el('span', '', item.extra + ' ');
     s.append(el('i', 'coin'));
     m.append(s);
   }
-  b.append(t, m);
-  requestAnimationFrame(() => b.classList.add('show'));
-  clearTimeout(bannerTimer);
-  bannerTimer = setTimeout(() => b.classList.remove('show'), 2600);
+  b.append(el('div', 'tag', item.tag), m);
+  requestAnimationFrame(() => requestAnimationFrame(() => b.classList.add('show')));
+  setTimeout(() => {
+    b.classList.remove('show');
+    setTimeout(nextBanner, 400); // wachten tot hij weg geschoven is
+  }, 2400);
+}
+
+// Team radio linksonder (commit-berichten enzo). Ook met een wachtrij.
+const radioQueue = [];
+let radioBusy = false;
+function queueRadio(who, message, sub = '') {
+  if (radioQueue.length >= 4) radioQueue.shift();
+  radioQueue.push({ who, message, sub });
+  if (!radioBusy) nextRadio();
+}
+
+function nextRadio() {
+  const item = radioQueue.shift();
+  if (!item) {
+    radioBusy = false;
+    return;
+  }
+  radioBusy = true;
+  setText('radioWho', item.who);
+  setText('radioMsg', item.message);
+  setText('radioSub', item.sub);
+  $('radio').classList.add('show');
+  setTimeout(() => {
+    $('radio').classList.remove('show');
+    setTimeout(nextRadio, 450);
+  }, 4500);
 }
 
 // "Lights out and away we go!" - als je auto (weer) vertrekt.
@@ -326,7 +381,53 @@ function setupTabs() {
 function renderGarage() {
   if (currentTab === 'upgrades') renderUpgrades();
   if (currentTab === 'liveries') renderLiveries();
+  if (currentTab === 'trophies') renderTrophies();
   if (currentTab === 'stats') renderStats();
+}
+
+// --- Tabblad: Trofeeën (Grand Prix + achievements) ---
+function renderTrophies() {
+  const box = $('tab-trophies');
+  box.textContent = '';
+  const gp = save.gp;
+
+  // Kaart met de GP van vandaag
+  const card = el('div', 'gpcard');
+  const title = el('div', 'gptitle');
+  title.append(el('b', '', `GP van ${gp.name}`), el('span', '', gp.won ? 'GEWONNEN 🏆' : `P${gp.position} van ${CAREER.GRID_SIZE}`));
+  const grid = el('div', 'grid');
+  for (let p = CAREER.GRID_SIZE; p >= 1; p--) {
+    const cell = el('i', '', 'P' + p);
+    if (p === gp.position) cell.classList.add('me');
+    else if (p > gp.position) cell.classList.add('done');
+    grid.append(cell);
+  }
+  card.append(
+    title,
+    grid,
+    el('div', 'how', `Inhalen: commit (+${CAREER.COMMIT_OVERTAKES}), push (+${CAREER.PUSH_OVERTAKES}), elke ${CAREER.LAPS_PER_OVERTAKE} rondes (+1). Elke dag een nieuwe GP.`),
+  );
+  box.append(card);
+
+  // Gewonnen Grands Prix
+  box.append(el('div', 'section', `Overwinningen (${save.gpWins})`));
+  const wins = el('div', 'wins');
+  if (save.trophies.length === 0) wins.append(el('span', '', 'Nog geen... haal P1!'));
+  for (const t of save.trophies.slice(-12).reverse()) wins.append(el('span', '', `🏆 ${t.name}`));
+  box.append(wins);
+
+  // Achievements
+  box.append(el('div', 'section', `Achievements (${save.achievements.length}/${ACHIEVEMENTS.length})`));
+  for (const a of ACHIEVEMENTS) {
+    const done = save.achievements.includes(a.id);
+    const row = el('div', 'ach' + (done ? ' done' : ''));
+    const info = el('div', 'info');
+    info.append(el('div', 'name', a.name), el('div', 'desc', a.desc));
+    const reward = el('div', 'reward');
+    reward.append(el('i', 'coin'), done ? '✓' : String(a.coins));
+    row.append(el('span', 'cup', '🏆'), info, reward);
+    box.append(row);
+  }
 }
 
 // --- Tabblad: Upgrades ---
@@ -439,6 +540,9 @@ function renderStats() {
     ['Tijd gecodeerd', `${Math.floor(mins / 60)}u ${mins % 60}m`],
     ['Totale afstand', (save.totalDistance / 1000).toFixed(1) + ' km'],
     ['Toetsaanslagen', save.totalKeys.toLocaleString('nl-NL')],
+    ['Commits', save.commits],
+    ['Pushes', save.pushes],
+    ['Grands Prix gewonnen', save.gpWins, 'gold'],
     ['Hoogste streak', '×' + save.bestStreak.toFixed(1)],
     ['Topsnelheid', save.bestSpeed + ' km/h'],
     ['Coins ooit verdiend', Math.floor(save.totalCoins).toLocaleString('nl-NL'), 'gold'],

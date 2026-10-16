@@ -90,6 +90,14 @@ function newSave() {
     bestSpeed: 0,        // hoogste snelheid in km/u
     bestLap: null,       // snelste rondetijd in seconden (null = nog geen)
     bestStreak: 1,       // hoogste streak-multiplier ooit
+    commits: 0,          // aantal git commits
+    pushes: 0,           // aantal git pushes
+    saves: 0,            // aantal keer Ctrl+S
+    runs: 0,             // aantal keer F5
+    gp: null,            // Grand Prix van vandaag { date, name, position, won, lapsAtStart } (zie career.js)
+    gpWins: 0,           // aantal gewonnen Grands Prix
+    trophies: [],        // gewonnen GP's: [{ date, name }]
+    achievements: [],    // id's van behaalde achievements
     upgrades: { engine: 0, fuel: 0, ers: 0, sponsor: 0, radar: 0 },
     liveries: ['rosso'], // gekochte kleuren
     livery: 'rosso',     // kleur die je nu gebruikt

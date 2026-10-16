@@ -14,6 +14,26 @@ Een klein F1-spelletje dat **altijd bovenop je scherm** staat en meespeelt terwi
 - Met coins koop je in de **garage (moersleutel-knop)** upgrades en autokleuren. Je progressie wordt opgeslagen.
 - De baan verandert mee met de **echte tijd**: overdag, zonsondergang of een nachtrace met lichtmasten.
 
+### 🏆 Elke dag een Grand Prix
+
+Elke dag is er een nieuwe GP (Monaco, Monza, Zandvoort...). Je start op **P10** en haalt tegenstanders
+in door te coderen. Haal je **P1**, dan win je de GP: trofee, 100 coins en confetti!
+
+### 💻 Acties in VS Code (of de terminal) doen iets in de game
+
+| Actie | Wat gebeurt er? |
+|---|---|
+| `git commit` | **Team radio** met je commit-bericht, +8 coins, **1 auto inhalen** |
+| `git push` | Confetti, +20 coins, **2 auto's inhalen** |
+| Branch wisselen (`git checkout`) | Team radio: "Box box, nieuwe strategie: *branch*" |
+| `git pull` / merge | Team radio: "Nieuwe updates van het team binnengehaald" |
+| `Ctrl+S` (opslaan) | "SAVED ✓" + ERS-batterij bijladen |
+| `F5` (code runnen/debuggen) | **DRS** gaat open: 12 sec extra snelheid |
+| Elke 15 rondes | 1 auto inhalen |
+
+Daarnaast zijn er **achievements** (bijv. "Eerste commit", "Ship it!", "Nachtuil", "Wereldkampioen")
+die extra coins geven. Je vindt ze in de garage onder **Trofeeën**.
+
 Gemaakt met [TinyJS](https://tinyjs.app): kleine desktop-apps (~6 MB) met een JavaScript-backend op
 **txiki.js** (dus **geen Node.js**) en een venster dat de ingebouwde webview van Windows gebruikt (WebView2).
 
@@ -74,7 +94,8 @@ F1 coding minigame/
 ├── src/
 │   ├── backend/                 ← draait op txiki.js (heeft toegang tot je systeem)
 │   │   ├── main.js              ← start alles, stuurt toetsen + actieve app naar het venster
-│   │   ├── keyboard.js          ← telt toetsaanslagen (via Windows user32.dll / FFI)
+│   │   ├── keyboard.js          ← telt toetsaanslagen + sneltoetsen Ctrl+S / F5 (via user32.dll / FFI)
+│   │   ├── git-watcher.js       ← ⭐ ziet commits, pushes, checkouts (GIT_FOLDERS = waar hij zoekt)
 │   │   └── coding-apps.js       ← ⭐ LIJST MET CODING-APPS (hier voeg je apps toe)
 │   └── frontend/                ← het venster zelf (gewone HTML/CSS/JS)
 │       ├── index.html           ← opbouw van het widget (knoppen, baan, HUD, garage)
@@ -82,6 +103,7 @@ F1 coding minigame/
 │       ├── progress.js          ← ⭐ coins, UPGRADES, LIVERIES (autokleuren), opslaan
 │       ├── game.js              ← ⭐ CONFIG (balans), race-logica: brandstof, ERS, streak, rondes
 │       ├── render.js            ← ⭐ alle graphics: baan, tribunes, auto, garage, dag/nacht
+│       ├── career.js            ← ⭐ Grand Prix, inhalen, achievements, wat git/sneltoetsen doen
 │       ├── app.js               ← opstarten, game-loop, HUD, banners, garage-scherm
 │       └── fonts/               ← lettertype Titillium Web (gratis, OFL-licentie)
 ├── assets/icon.png              ← icoon van de app
@@ -110,6 +132,12 @@ F1 coding minigame/
 | **kleuren van het venster** veranderen | `src/frontend/style.css` → `:root` (bovenaan) |
 | de **venstergrootte** veranderen | `tinyjs.json` → `size` + `src/frontend/style.css` → `#widget` |
 | welke **toetsen** meetellen | `src/backend/keyboard.js` → lijst `KEYS` |
+| **sneltoetsen** toevoegen (bijv. Ctrl+Z) | `src/backend/keyboard.js` → `SHORTCUTS` + `src/frontend/career.js` → `careerOnShortcut()` |
+| in **andere mappen** naar git-repo's zoeken | `src/backend/git-watcher.js` → `GIT_FOLDERS` |
+| wat er gebeurt bij **commit/push** | `src/frontend/career.js` → `careerOnGit()` en `CAREER` |
+| **beloningen** (coins per commit/push/winst) | `src/frontend/career.js` → `CAREER` |
+| een **achievement** toevoegen | `src/frontend/career.js` → lijst `ACHIEVEMENTS` |
+| de **lijst met Grands Prix** | `src/frontend/career.js` → `GRANDS_PRIX` |
 
 ### Hoe voeg ik een coding-app toe?
 
@@ -124,9 +152,10 @@ F1 coding minigame/
 
 ```
  ┌──────────── BACKEND (txiki.js) ────────────┐        ┌────────── FRONTEND (venster) ──────────┐
- │ keyboard.js  → telt toetsen elke 15 ms      │ push   │ app.js      → ontvangt 'keys' + 'app'   │
- │ main.js      → elke 400 ms: actieve app?    │ ─────► │ game.js     → brandstof, ERS, coins     │
+ │ keyboard.js  → toetsen + Ctrl+S/F5 (15 ms)  │ push   │ app.js      → ontvangt alle berichten   │
+ │ main.js      → elke 400 ms: actieve app?    │ ─────► │ game.js     → brandstof, ERS, inhalen   │
  │ coding-apps  → is het een coding-app?       │        │ render.js   → tekent alles op canvas    │
+ │ git-watcher  → elke 2 s: nieuwe git-acties? │        │ career.js   → GP, achievements, git     │
  │                                             │        │ progress.js → upgrades, opslaan         │
  └─────────────────────────────────────────────┘        └─────────────────────────────────────────┘
 ```
@@ -137,6 +166,9 @@ F1 coding minigame/
 - **Toetsen tellen**: `src/backend/keyboard.js` gebruikt **FFI** (`tjs:ffi`) om de Windows-functie
   `GetAsyncKeyState` uit `user32.dll` aan te roepen. Zo werkt het ook als de game niet gefocust is.
   Er wordt alleen geteld **hoeveel** toetsen je indrukt, nooit **welke**. Er wordt niks opgeslagen of verstuurd.
+- **Git-acties zien**: `src/backend/git-watcher.js` zoekt git-repo's in `GIT_FOLDERS` en leest elke 2 seconden
+  het logboek van git (de *reflog* in `.git/logs/`). Daar schrijft git bij elke commit `commit: <bericht>` en bij
+  elke push `update by push` in. Daardoor werkt het met VS Code, de terminal én GitHub Desktop.
 - **Opslaan**: `tiny.store` in `progress.js`. Je save staat in
   `%APPDATA%\com.lars.f1-coding-minigame\store.json`. Verwijder dat bestand om opnieuw te beginnen.
 

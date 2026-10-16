@@ -25,6 +25,7 @@
   <div id="status" class="status pits">
     <span class="chip" id="modeText">PITS</span>
     <span class="app" id="appText">…</span>
+    <span class="pos" id="pos" title="Je positie in de Grand Prix van vandaag">P10</span>
     <span class="streak" id="streak" title="Streak: hoe langer je achter elkaar codeert, hoe meer coins">×1.0</span>
   </div>
 
@@ -34,6 +35,16 @@
     <div id="lights" class="lights"><i></i><i></i><i></i><i></i><i></i></div>
     <div id="banner" class="banner"></div>
     <div id="hint" class="hint"></div>
+    <!-- Team radio (bij commits, pushes, branch wisselen...) -->
+    <div id="radio" class="radio">
+      <div class="rtop">
+        <span class="wave"><i></i><i></i><i></i><i></i><i></i></span>
+        <span class="rlabel">TEAM RADIO</span>
+        <span class="rwho" id="radioWho"></span>
+      </div>
+      <div class="rmsg" id="radioMsg"></div>
+      <div class="rsub" id="radioSub"></div>
+    </div>
   </div>
 
   <!-- HUD: snelheid, ronde, brandstof en ERS -->
@@ -45,6 +56,7 @@
     <div class="lapbox">
       <div class="lapTop">
         <span>LAP <b id="lapNum">1</b></span>
+        <span class="drs" id="drs" title="DRS: druk op F5 (code runnen) voor een boost">DRS</span>
         <span class="lapTime" id="lapTime">0:00.0</span>
       </div>
       <div class="lapbar"><div id="lapBar"></div><i style="left:33.3%"></i><i style="left:66.6%"></i></div>
@@ -66,10 +78,12 @@
     <nav class="tabs">
       <button data-tab="upgrades" class="active">Upgrades</button>
       <button data-tab="liveries">Lak</button>
+      <button data-tab="trophies">Trofeeën</button>
       <button data-tab="stats">Stats</button>
     </nav>
     <div class="tab" id="tab-upgrades"></div>
     <div class="tab hidden" id="tab-liveries"></div>
+    <div class="tab hidden" id="tab-trophies"></div>
     <div class="tab hidden" id="tab-stats"></div>
   </div>
 
@@ -77,10 +91,11 @@
   <div id="toast" class="toast"></div>
 </div>
 
-<!-- Volgorde is belangrijk: progress -> game -> render -> app -->
+<!-- Volgorde is belangrijk: progress -> game -> render -> career -> app -->
 <script src="progress.js"></script>
 <script src="game.js"></script>
 <script src="render.js"></script>
+<script src="career.js"></script>
 <script src="app.js"></script>
 </body>
 </html>

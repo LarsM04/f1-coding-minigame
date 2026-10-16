@@ -24,9 +24,20 @@ for (let k = 0x60; k <= 0x6f; k++) KEYS.push(k); // Numpad
 for (let k = 0xba; k <= 0xc0; k++) KEYS.push(k); // ; = , - . / `
 for (let k = 0xdb; k <= 0xdf; k++) KEYS.push(k); // [ \ ] '
 
+// ---------------------------------------------------------------------
+//  SNELTOETSEN die iets doen in de game
+//  key = virtual-key code, ctrl = moet Ctrl ingedrukt zijn?
+// ---------------------------------------------------------------------
+const VK_CONTROL = 0x11;
+const SHORTCUTS = [
+  { name: 'save', key: 0x53, ctrl: true },  // Ctrl+S = bestand opslaan
+  { name: 'run',  key: 0x74, ctrl: false }, // F5    = code runnen / debuggen (VS Code)
+];
+
 // Maakt een teller. Geeft een object terug met:
 //   take() -> aantal toetsaanslagen sinds de vorige take()
-export function createKeyCounter(app) {
+// onShortcut(naam) wordt aangeroepen bij een sneltoets uit SHORTCUTS.
+export function createKeyCounter(app, onShortcut = () => {}) {
   let count = 0;
 
   // --- Methode 1: Windows FFI (precies, telt echte toetsaanslagen) ---
@@ -49,6 +60,14 @@ export function createKeyCounter(app) {
         const tappedSinceLast = (state & 1) !== 0; // laagste bit = kort aangetikt sinds vorige check
         if (!wasDown[vk] && (down || tappedSinceLast)) count++;
         wasDown[vk] = down ? 1 : 0;
+      }
+
+      // Sneltoetsen: alleen op het moment dat de toets NET ingedrukt wordt.
+      const ctrlDown = (GetAsyncKeyState(VK_CONTROL) & 0x8000) !== 0;
+      for (const sc of SHORTCUTS) {
+        const down = (GetAsyncKeyState(sc.key) & 0x8000) !== 0;
+        if (down && !sc.wasDown && (!sc.ctrl || ctrlDown)) onShortcut(sc.name);
+        sc.wasDown = down;
       }
     }, 15);
   } else {

@@ -12,6 +12,8 @@
 //   - STREAK: hoe langer je achter elkaar codeert, hoe meer coins (max ×2).
 //   - Andere app (Brave, Discord...) -> modus PITS: auto staat in de garage.
 //   - Elke ronde = coins. Onderweg liggen ook coins op de baan.
+//   - DRS (na F5) en INHALEN van tegenstanders (na commit/push) worden
+//     hier uitgevoerd; WANNEER dat gebeurt staat in career.js.
 // =====================================================================
 
 // ---------------------------------------------------------------------
@@ -36,7 +38,9 @@ const CONFIG = {
   ERS_BOOST: 30,              // + km/u als ERS aan staat
   ERS_BOOST_PER_LEVEL: 6,     // + km/u boost per ERS-level
 
-  STREAK_STEP: 0.1,           // streak gaat elke minuut met dit omhoog...
+  DRS_BOOST: 35,              // + km/u als DRS open staat (na F5)
+
+  STREAK_STEP: 0.1,          // streak gaat elke minuut met dit omhoog...
   STREAK_MAX: 2,              // ...tot maximaal ×2
   STREAK_GRACE: 60,           // seconden stilstand/pits voordat je streak weg is
 
@@ -67,6 +71,11 @@ const game = {
   coins: [],           // coins op de baan: { at: meters, bob: fase voor het zweven }
   nextCoinAt: 100,     // waar de volgende coin komt te liggen
   sparks: [],          // vonken onder de auto bij hoge snelheid
+  drsTime: 0,          // seconden DRS over (na F5, zie career.js)
+  rivals: [],          // tegenstanders die je aan het inhalen bent: { x, livery, passed }
+  overtakeQueue: 0,    // hoeveel inhaalacties er nog komen
+  nextRivalAt: 0,      // tijdstip waarop de volgende tegenstander mag verschijnen
+  confetti: [],        // confetti-deeltjes (bij push en winst)
   lastKeyTime: -99,    // tijdstip van de laatste toetsaanslag
   time: 0,             // tijd in seconden sinds start (voor animaties)
 
@@ -105,6 +114,10 @@ function isDriving() {
 function ersActive() {
   return isDriving() && game.ers > 0;
 }
+// Staat DRS open? (na F5)
+function drsActive() {
+  return isDriving() && game.drsTime > 0;
+}
 
 // ---------------------------------------------------------------------
 //  INPUT - wordt aangeroepen vanuit app.js
@@ -140,7 +153,13 @@ function gameUpdate(dt) {
   game.wasDriving = driving;
 
   // --- 2. Snelheid naar de doelsnelheid brengen ---
-  const target = driving ? cruiseSpeed() + (game.ers > 0 ? ersBoost() : 0) : 0;
+  game.drsTime = Math.max(0, game.drsTime - dt);
+  let target = 0;
+  if (driving) {
+    target = cruiseSpeed();
+    if (game.ers > 0) target += ersBoost();
+    if (game.drsTime > 0) target += CONFIG.DRS_BOOST;
+  }
   if (game.speed < target) {
     game.speed = Math.min(target, game.speed + CONFIG.ACCEL * dt);
   } else {
@@ -231,7 +250,77 @@ function gameUpdate(dt) {
 
   // --- 10. Zwevende teksten (+1) ouder maken ---
   for (const e of floatTexts) e.age += dt;
-  floatTexts = floatTexts.filter((e) => e.age < 0.9);
+  floatTexts = floatTexts.filter((e) => e.age < 1.2);
+
+  // --- 11. Tegenstanders inhalen ---
+  updateRivals(dt, driving);
+
+  // --- 12. Confetti laten vallen ---
+  for (const c of game.confetti) {
+    c.x += c.vx * dt;
+    c.y += c.vy * dt;
+    c.vx *= 0.99;
+    c.rot += c.spin * dt;
+  }
+  game.confetti = game.confetti.filter((c) => c.y < TRACK.H + 10);
+}
+
+// ---------------------------------------------------------------------
+//  INHALEN - een tegenstander rijdt (langzamer) voor je en jij gaat erlangs
+// ---------------------------------------------------------------------
+
+// Zet `n` inhaalacties in de wachtrij (aangeroepen vanuit career.js).
+function queueOvertake(n) {
+  game.overtakeQueue += n;
+}
+
+function updateRivals(dt, driving) {
+  // Staat de auto stil of in de pits? Dan meteen inhalen (zonder animatie).
+  if (!driving && game.speed < 20) {
+    while (game.overtakeQueue > 0) {
+      game.overtakeQueue -= 1;
+      careerOnOvertake();
+    }
+  }
+
+  // Nieuwe tegenstander laten verschijnen (rechts, net buiten beeld).
+  if (game.overtakeQueue > 0 && game.rivals.length === 0 && game.time >= game.nextRivalAt) {
+    game.overtakeQueue -= 1;
+    const others = Object.keys(LIVERIES).filter((id) => id !== save.livery);
+    const pick = LIVERIES[others[Math.floor(Math.random() * others.length)]];
+    const number = 2 + Math.floor(Math.random() * 80);
+    game.rivals.push({ x: TRACK.W + 10, livery: { ...pick, number }, passed: false });
+  }
+
+  // Tegenstanders schuiven naar links (jij bent sneller).
+  for (const r of game.rivals) {
+    r.x -= (60 + game.speed * 0.15) * dt;
+    if (!r.passed && r.x < TRACK.CAR_X - 10) {
+      r.passed = true; // jij bent er voorbij!
+      careerOnOvertake();
+      game.nextRivalAt = game.time + 1.2;
+    }
+  }
+  game.rivals = game.rivals.filter((r) => r.x > -TRACK.CAR_LEN - 20);
+}
+
+// ---------------------------------------------------------------------
+//  CONFETTI
+// ---------------------------------------------------------------------
+const CONFETTI_COLORS = ['#e10600', '#ffd400', '#ffffff', '#19d16b', '#3fb6ff', '#b43cff', '#ff8000'];
+
+function spawnConfetti(n) {
+  for (let i = 0; i < n; i++) {
+    game.confetti.push({
+      x: Math.random() * TRACK.W,
+      y: -10 - Math.random() * 60,
+      vx: (Math.random() - 0.5) * 40,
+      vy: 35 + Math.random() * 45,
+      rot: Math.random() * Math.PI,
+      spin: (Math.random() - 0.5) * 10,
+      color: CONFETTI_COLORS[Math.floor(Math.random() * CONFETTI_COLORS.length)],
+    });
+  }
 }
 
 // ---------------------------------------------------------------------
