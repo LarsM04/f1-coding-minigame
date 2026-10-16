@@ -98,6 +98,15 @@ function newSave() {
     gpWins: 0,           // aantal gewonnen Grands Prix
     trophies: [],        // gewonnen GP's: [{ date, name }]
     achievements: [],    // id's van behaalde achievements
+    season: null,        // kampioenschap van deze week { week, points: { me, linter, ... }, races }
+    lastSeason: null,    // uitslag van vorige week { week, position, points }
+    championships: 0,    // aantal gewonnen weekkampioenschappen
+    championshipWins: [],// gewonnen kampioenschappen: [{ week }]
+    bestPitstop: null,   // snelste pitstop in seconden
+    lastPitstop: 0,      // tijdstip (ms) van de laatste pitstop-challenge
+    drySpells: 0,        // hoe vaak je de regen hebt laten stoppen (errors gefixt)
+    greenFlags: 0,       // aantal geslaagde tests/builds
+    muted: false,        // geluid uit?
     upgrades: { engine: 0, fuel: 0, ers: 0, sponsor: 0, radar: 0 },
     liveries: ['rosso'], // gekochte kleuren
     livery: 'rosso',     // kleur die je nu gebruikt

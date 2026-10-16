@@ -15,6 +15,7 @@
     <div class="brand"><span class="f1">F1</span><span class="title">CODING</span></div>
     <div class="coins" id="coins" title="Je coins"><i class="coin"></i><span id="coinCount">0</span></div>
     <div class="buttons">
+      <button id="btnSound" data-icon="volume" title="Geluid aan/uit"></button>
       <button id="btnGarage" data-icon="wrench" title="Garage (upgrades)"></button>
       <button id="btnCompact" data-icon="chevronDown" title="Klein / groot"></button>
       <button id="btnClose" data-icon="close" class="close" title="Afsluiten"></button>
@@ -44,6 +45,22 @@
       </div>
       <div class="rmsg" id="radioMsg"></div>
       <div class="rsub" id="radioSub"></div>
+    </div>
+
+    <!-- Pitstop-challenge (alleen in de pits, zie pitstop.js) -->
+    <button id="pitBtn" class="pitbtn"><span id="pitBtnText">PITSTOP-CHALLENGE</span></button>
+    <div id="pitstop" class="pitstop">
+      <div class="pithead">PITSTOP · klik de band die oplicht!</div>
+      <div class="pitgrid">
+        <button class="tyre" data-tyre="0"><b>LV</b><small>linksvoor</small></button>
+        <div class="pitcenter">
+          <div class="ptime" id="pitTime">0.00</div>
+          <div class="pmsg" id="pitMsg"></div>
+        </div>
+        <button class="tyre" data-tyre="1"><b>RV</b><small>rechtsvoor</small></button>
+        <button class="tyre" data-tyre="2"><b>LA</b><small>linksachter</small></button>
+        <button class="tyre" data-tyre="3"><b>RA</b><small>rechtsachter</small></button>
+      </div>
     </div>
   </div>
 
@@ -78,11 +95,13 @@
     <nav class="tabs">
       <button data-tab="upgrades" class="active">Upgrades</button>
       <button data-tab="liveries">Lak</button>
+      <button data-tab="wk">WK</button>
       <button data-tab="trophies">Trofeeën</button>
       <button data-tab="stats">Stats</button>
     </nav>
     <div class="tab" id="tab-upgrades"></div>
     <div class="tab hidden" id="tab-liveries"></div>
+    <div class="tab hidden" id="tab-wk"></div>
     <div class="tab hidden" id="tab-trophies"></div>
     <div class="tab hidden" id="tab-stats"></div>
   </div>
@@ -91,11 +110,13 @@
   <div id="toast" class="toast"></div>
 </div>
 
-<!-- Volgorde is belangrijk: progress -> game -> render -> career -> app -->
+<!-- Volgorde is belangrijk: app.js als laatste (die start alles op) -->
 <script src="progress.js"></script>
 <script src="game.js"></script>
 <script src="render.js"></script>
+<script src="sound.js"></script>
 <script src="career.js"></script>
+<script src="pitstop.js"></script>
 <script src="app.js"></script>
 </body>
 </html>

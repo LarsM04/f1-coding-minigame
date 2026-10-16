@@ -1,0 +1,19 @@
+{
+  "name": "f1-coding-minigame",
+  "displayName": "F1 Coding Minigame",
+  "description": "Koppelt VS Code aan de F1 Coding Minigame: errors laten het regenen, tests geven een groene vlag, debuggen opent DRS.",
+  "version": "0.1.0",
+  "publisher": "larsm04",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/LarsM04/f1-coding-minigame"
+  },
+  "engines": {
+    "vscode": "^1.93.0"
+  },
+  "categories": ["Other"],
+  "activationEvents": ["onStartupFinished"],
+  "main": "./extension.js",
+  "contributes": {}
+}

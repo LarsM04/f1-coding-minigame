@@ -25,6 +25,8 @@ const ICONS = {
   bolt: '<path d="M13 2L4 14h7l-1 8 9-12h-7z"/>',
   briefcase: '<rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/>',
   radar: '<circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="4.5"/><path d="M12 12l6.5-6.5"/>',
+  volume: '<path d="M11 5L6 9H2v6h4l5 4V5z"/><path d="M15.5 8.5a5 5 0 0 1 0 7"/><path d="M19 5a10 10 0 0 1 0 14"/>',
+  volumeX: '<path d="M11 5L6 9H2v6h4l5 4V5z"/><path d="M22 9l-6 6M16 9l6 6"/>',
 };
 
 // Maakt een <svg>-icoon als HTML-tekst.
@@ -58,6 +60,8 @@ async function boot() {
   renderInit($('track'));
   setupButtons();
   setupTabs();
+  pitSetup();
+  $('btnSound').innerHTML = icon(save.muted ? 'volumeX' : 'volume');
   await applyCompact();
 
   // Venster terugzetten waar het de vorige keer stond,
@@ -74,7 +78,10 @@ async function boot() {
   game.lapTimeValid = save.distance === 0;
 
   // Callbacks van de game -> UI bijwerken.
-  game.onCoin = () => bumpCoins();
+  game.onCoin = () => {
+    bumpCoins();
+    playSound('coin');
+  };
   game.onLap = onLap;
   game.onStreak = onStreak;
   game.onLightsOut = lightsOut;
@@ -84,9 +91,22 @@ async function boot() {
   tiny.api.on('app', (info) => setApp(info));
   tiny.api.on('git', (ev) => careerOnGit(ev));                  // commit, push, ... (career.js)
   tiny.api.on('shortcut', ({ name }) => careerOnShortcut(name)); // Ctrl+S, F5 (career.js)
+  tiny.api.on('vscode', (ev) => careerOnVscode(ev));            // VS Code-extensie (career.js)
 
   // Grand Prix van vandaag klaarzetten (nieuwe dag = nieuwe GP).
   ensureGrandPrix();
+
+  // Elke 5 sec je positie/coins doorgeven aan de VS Code-extensie (statusbalk).
+  const writeStatus = () =>
+    tiny.api.call('writeStatus', {
+      position: save.gp.position,
+      won: save.gp.won,
+      gp: save.gp.name,
+      coins: Math.floor(save.coins),
+      rain: game.raining,
+    }).catch(() => {});
+  writeStatus();
+  setInterval(writeStatus, 5000);
 
   // Huidige app meteen opvragen (anders wachten we op de eerste wissel).
   setApp(await tiny.api.call('currentApp'));
@@ -179,6 +199,9 @@ function updateHud() {
   }
   $('drs').classList.toggle('on', drsActive());
 
+  // Pitstop-knop en -timer (pitstop.js)
+  pitTick();
+
   // Hint op de baan (in de pits staat de uitleg op het scherm in de garage)
   let hint = '';
   if (game.mode === 'pits') hint = '';
@@ -212,6 +235,7 @@ function bumpCoins() {
 // Ronde voltooid.
 function onLap({ lap, gained, lapTime, best }) {
   bumpCoins();
+  playSound(best ? 'achievement' : 'lap');
   if (best) {
     showBanner('BESTE RONDE', fmtLapTime(lapTime), `+${fmtCoins(gained)}`, 'purple');
   } else {
@@ -283,6 +307,7 @@ function nextRadio() {
   setText('radioMsg', item.message);
   setText('radioSub', item.sub);
   $('radio').classList.add('show');
+  playSound('radio');
   setTimeout(() => {
     $('radio').classList.remove('show');
     setTimeout(nextRadio, 450);
@@ -293,6 +318,7 @@ function nextRadio() {
 let lightsTimer = null;
 function lightsOut() {
   const l = $('lights');
+  playSound('lights');
   clearTimeout(lightsTimer);
   l.className = 'lights show';
   lightsTimer = setTimeout(() => {
@@ -329,6 +355,14 @@ function setupButtons() {
 
   // Klein/groot venster
   $('btnCompact').onclick = () => toggleCompact();
+
+  // Geluid aan/uit
+  $('btnSound').onclick = () => {
+    save.muted = !save.muted;
+    saveDirty = true;
+    $('btnSound').innerHTML = icon(save.muted ? 'volumeX' : 'volume');
+    if (!save.muted) playSound('coin'); // even laten horen dat het aan staat
+  };
 
   // Opslaan en afsluiten
   $('btnClose').onclick = async () => {
@@ -381,8 +415,35 @@ function setupTabs() {
 function renderGarage() {
   if (currentTab === 'upgrades') renderUpgrades();
   if (currentTab === 'liveries') renderLiveries();
+  if (currentTab === 'wk') renderChampionship();
   if (currentTab === 'trophies') renderTrophies();
   if (currentTab === 'stats') renderStats();
+}
+
+// --- Tabblad: WK (kampioenschap van deze week) ---
+function renderChampionship() {
+  const box = $('tab-wk');
+  box.textContent = '';
+  const week = save.season.week.split('-W')[1];
+  const races = save.season.races.length + 1; // + de GP van vandaag
+
+  const head = el('div', 'wkhead');
+  head.append(el('b', '', `KAMPIOENSCHAP · WEEK ${Number(week)}`), el('span', '', `${races} race${races === 1 ? '' : 's'}`));
+  box.append(head);
+
+  standings().forEach((row, i) => {
+    const r = el('div', 'wkrow' + (row.id === 'me' ? ' me' : '') + (i === 0 ? ' first' : ''));
+    const bar = el('span', 'bar');
+    bar.style.background = row.id === 'me' ? currentLivery().main : LIVERIES[row.livery].main;
+    r.append(el('span', 'p', String(i + 1)), bar, el('span', 'code', row.code), el('span', 'name', row.name), el('span', 'pts', `${row.pts} PT`));
+    box.append(r);
+  });
+
+  const myPoints = POINTS[save.gp.position - 1];
+  let note = `De GP van vandaag telt voorlopig mee (P${save.gp.position} = ${myPoints} punten). ` +
+    'Aan het eind van de dag staan je punten vast. Wie zondagnacht bovenaan staat, is wereldkampioen!';
+  if (save.lastSeason) note += ` Vorige week werd je P${save.lastSeason.position}.`;
+  box.append(el('div', 'wknote', note));
 }
 
 // --- Tabblad: Trofeeën (Grand Prix + achievements) ---
@@ -409,10 +470,11 @@ function renderTrophies() {
   );
   box.append(card);
 
-  // Gewonnen Grands Prix
-  box.append(el('div', 'section', `Overwinningen (${save.gpWins})`));
+  // Gewonnen kampioenschappen + Grands Prix
+  box.append(el('div', 'section', `Overwinningen (${save.championships} WK · ${save.gpWins} GP)`));
   const wins = el('div', 'wins');
-  if (save.trophies.length === 0) wins.append(el('span', '', 'Nog geen... haal P1!'));
+  if (save.trophies.length === 0 && save.championshipWins.length === 0) wins.append(el('span', '', 'Nog geen... haal P1!'));
+  for (const c of save.championshipWins.slice().reverse()) wins.append(el('span', '', `👑 WK week ${Number(c.week.split('-W')[1])}`));
   for (const t of save.trophies.slice(-12).reverse()) wins.append(el('span', '', `🏆 ${t.name}`));
   box.append(wins);
 
@@ -543,6 +605,10 @@ function renderStats() {
     ['Commits', save.commits],
     ['Pushes', save.pushes],
     ['Grands Prix gewonnen', save.gpWins, 'gold'],
+    ['Kampioenschappen', save.championships, 'gold'],
+    ['Snelste pitstop', save.bestPitstop === null ? '-' : save.bestPitstop.toFixed(2) + ' s', 'purple'],
+    ['Geslaagde tests/builds', save.greenFlags],
+    ['Errors gefixt na regen', save.drySpells],
     ['Hoogste streak', '×' + save.bestStreak.toFixed(1)],
     ['Topsnelheid', save.bestSpeed + ' km/h'],
     ['Coins ooit verdiend', Math.floor(save.totalCoins).toLocaleString('nl-NL'), 'gold'],

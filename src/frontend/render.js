@@ -190,6 +190,16 @@ function drawTrackScene(p) {
   ctx.fillStyle = 'rgba(255,255,255,0.85)'; // witte lijn aan de rand
   ctx.fillRect(0, RT + 1, W, 1.5);
 
+  // --- Natte baan (glimt in de regen) ---
+  if (game.rain > 0.05) {
+    const wet = ctx.createLinearGradient(0, RT, 0, RB);
+    wet.addColorStop(0, `rgba(170,190,220,${0.05 * game.rain})`);
+    wet.addColorStop(0.5, `rgba(170,190,220,${0.22 * game.rain})`);
+    wet.addColorStop(1, `rgba(170,190,220,${0.05 * game.rain})`);
+    ctx.fillStyle = wet;
+    ctx.fillRect(0, RT + 3, W, RB - RT - 3);
+  }
+
   // --- Finishlijn op het asfalt ---
   for (const at of lineAts) {
     const x = worldToX(at);
@@ -223,9 +233,26 @@ function drawTrackScene(p) {
     ctx.translate(r.x, TRACK.GROUND_Y - 7);
     ctx.scale(0.86, 0.86);
     ctx.filter = 'brightness(0.78)';
-    drawCarSide(ctx, 0, 0, r.livery, { wheelAngle: scroll / 9, speed: game.speed });
+    drawCarSide(ctx, 0, 0, r.livery, { wheelAngle: scroll / 9, speed: game.speed, wet: game.rain > 0.3 });
     ctx.restore();
+    // Naamkaartje boven de tegenstander (zoals op F1 TV)
+    if (r.code) {
+      const tx = r.x + 40;
+      const ty = TRACK.GROUND_Y - 44;
+      ctx.fillStyle = 'rgba(10,11,15,0.85)';
+      ctx.fillRect(tx - 14, ty - 6, 28, 11);
+      ctx.fillStyle = r.livery.main;
+      ctx.fillRect(tx - 14, ty - 6, 2.5, 11);
+      ctx.font = `900 italic 8px ${FONT}`;
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillStyle = '#fff';
+      ctx.fillText(r.code, tx + 1, ty);
+    }
   }
+
+  // --- Opspattend water achter de auto (in de regen) ---
+  if (game.rain > 0.2 && game.speed > 40) drawSpray();
 
   // --- ERS-spoor achter de auto ---
   if (ersActive()) drawErsTrail();
@@ -244,6 +271,7 @@ function drawTrackScene(p) {
     speed: game.speed,
     ers: ersActive(),
     drs: drsActive(),
+    wet: game.rain > 0.3,
     time: game.time,
   });
 
@@ -270,6 +298,51 @@ function drawTrackScene(p) {
   if (p.tint) {
     ctx.fillStyle = p.tint;
     ctx.fillRect(0, 0, W, TRACK.H);
+  }
+
+  // --- Regen ---
+  if (game.rain > 0.02) drawRain(scroll);
+}
+
+// Regen: grijze lucht, vallende druppels en af en toe bliksem.
+function drawRain(scroll) {
+  const { W, H } = TRACK;
+  const r = game.rain;
+  ctx.fillStyle = `rgba(25,32,48,${0.45 * r})`;
+  ctx.fillRect(0, 0, W, H);
+
+  ctx.strokeStyle = `rgba(210,225,250,${0.75 * r})`;
+  ctx.lineWidth = 1.2;
+  ctx.beginPath();
+  const drops = Math.floor(140 * r);
+  for (let i = 0; i < drops; i++) {
+    const speed = 380 + (i % 5) * 40;
+    const y = (((i * 61) % (H + 20)) + game.time * speed) % (H + 20) - 10;
+    const x = ((((i * 97) - scroll * 0.6 - y * 0.35) % (W + 30)) + W + 30) % (W + 30) - 15;
+    ctx.moveTo(x, y);
+    ctx.lineTo(x - 3, y + 9);
+  }
+  ctx.stroke();
+
+  // Bliksem bij zware regen (heel af en toe)
+  if (r > 0.75 && Math.sin(game.time * 0.9) > 0.995) {
+    ctx.fillStyle = 'rgba(255,255,255,0.35)';
+    ctx.fillRect(0, 0, W, H);
+  }
+}
+
+// Water dat achter de banden opspat.
+function drawSpray() {
+  const a = Math.min(1, game.rain) * Math.min(1, game.speed / 150);
+  for (let i = 0; i < 9; i++) {
+    const jitter = Math.sin(game.time * 40 + i * 7) * 3;
+    const x = TRACK.CAR_X + 10 - i * 7 + jitter;
+    const y = TRACK.GROUND_Y - 6 - i * 1.6 + jitter * 0.5;
+    const rad = 4 + i * 1.8;
+    ctx.fillStyle = `rgba(220,228,240,${0.22 * a * (1 - i / 9)})`;
+    ctx.beginPath();
+    ctx.arc(x, y, rad, 0, Math.PI * 2);
+    ctx.fill();
   }
 }
 
@@ -580,10 +653,10 @@ function drawErsTrail() {
 // =====================================================================
 //  DE F1-AUTO (zijaanzicht, rijdt naar rechts)
 //  x = achterkant van de auto, gy = grond (onderkant banden)
-//  opts: wheelAngle (draaien van de wielen), speed, ers, drs, time, blankets
+//  opts: wheelAngle (draaien van de wielen), speed, ers, drs, wet, time, blankets
 // =====================================================================
 function drawCarSide(g, x, gy, livery, opts = {}) {
-  const { wheelAngle = 0, speed = 0, ers = false, drs = false, time = 0, blankets = false } = opts;
+  const { wheelAngle = 0, speed = 0, ers = false, drs = false, wet = false, time = 0, blankets = false } = opts;
   g.save();
   g.translate(x, gy);
 
@@ -731,8 +804,8 @@ function drawCarSide(g, x, gy, livery, opts = {}) {
   g.fillRect(62, -19.5, 0.8, 2.5);
 
   // Wielen (voor de carrosserie, want ze zitten aan jouw kant)
-  drawWheel(g, 19, -10, 10, wheelAngle, speed, blankets ? livery : null);
-  drawWheel(g, 79, -10, 10, wheelAngle, speed, blankets ? livery : null);
+  drawWheel(g, 19, -10, 10, wheelAngle, speed, blankets ? livery : null, wet);
+  drawWheel(g, 79, -10, 10, wheelAngle, speed, blankets ? livery : null, wet);
 
   // Voorvleugel
   g.fillStyle = livery.dark;
@@ -749,7 +822,8 @@ function drawCarSide(g, x, gy, livery, opts = {}) {
 }
 
 // Eén wiel met draaiende velg. blanketLivery = bandenwarmer eromheen (in de garage).
-function drawWheel(g, cx, cy, r, angle, speed, blanketLivery) {
+// wet = regenbanden (groene streep in plaats van rood).
+function drawWheel(g, cx, cy, r, angle, speed, blanketLivery, wet = false) {
   if (blanketLivery) {
     // Bandenwarmer: een dekentje in teamkleur
     g.fillStyle = blanketLivery.dark;
@@ -772,8 +846,8 @@ function drawWheel(g, cx, cy, r, angle, speed, blanketLivery) {
   g.beginPath();
   g.arc(cx, cy, r, 0, Math.PI * 2);
   g.fill();
-  // Gekleurde streep op de band (rood = soft compound)
-  g.strokeStyle = '#e10600';
+  // Gekleurde streep op de band (rood = soft, groen = regenband)
+  g.strokeStyle = wet ? '#19d16b' : '#e10600';
   g.lineWidth = 1;
   g.beginPath();
   g.arc(cx, cy, r - 2.3, 0, Math.PI * 2);

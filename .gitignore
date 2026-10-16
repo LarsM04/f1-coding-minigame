@@ -2,6 +2,9 @@
 dist/
 .build/
 
+# Gebouwde VS Code-extensie (maak je opnieuw met vscode-extension/install.ps1)
+*.vsix
+
 # Eventuele npm-pakketten
 node_modules/
 

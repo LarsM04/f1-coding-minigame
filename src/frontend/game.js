@@ -40,6 +40,9 @@ const CONFIG = {
 
   DRS_BOOST: 35,              // + km/u als DRS open staat (na F5)
 
+  RAIN_DELAY: 20,             // seconden errors voordat het gaat regenen
+  RAIN_SPEED_FACTOR: 0.85,    // in de regen rijd je 15% langzamer
+
   STREAK_STEP: 0.1,          // streak gaat elke minuut met dit omhoog...
   STREAK_MAX: 2,              // ...tot maximaal ×2
   STREAK_GRACE: 60,           // seconden stilstand/pits voordat je streak weg is
@@ -76,6 +79,10 @@ const game = {
   overtakeQueue: 0,    // hoeveel inhaalacties er nog komen
   nextRivalAt: 0,      // tijdstip waarop de volgende tegenstander mag verschijnen
   confetti: [],        // confetti-deeltjes (bij push en winst)
+  errors: 0,           // aantal errors in VS Code (van de extensie)
+  errorsSince: null,   // sinds wanneer er errors zijn
+  raining: false,      // regent het? (na RAIN_DELAY seconden errors)
+  rain: 0,             // hoe hard het regent 0..1 (voor de graphics, gaat geleidelijk)
   lastKeyTime: -99,    // tijdstip van de laatste toetsaanslag
   time: 0,             // tijd in seconden sinds start (voor animaties)
 
@@ -159,6 +166,7 @@ function gameUpdate(dt) {
     target = cruiseSpeed();
     if (game.ers > 0) target += ersBoost();
     if (game.drsTime > 0) target += CONFIG.DRS_BOOST;
+    if (game.rain > 0.3) target *= CONFIG.RAIN_SPEED_FACTOR; // regenbanden
   }
   if (game.speed < target) {
     game.speed = Math.min(target, game.speed + CONFIG.ACCEL * dt);
@@ -255,7 +263,19 @@ function gameUpdate(dt) {
   // --- 11. Tegenstanders inhalen ---
   updateRivals(dt, driving);
 
-  // --- 12. Confetti laten vallen ---
+  // --- 12. Weer: regen als je al een tijdje errors hebt ---
+  const wantRain = game.errors > 0 && game.errorsSince !== null && game.time - game.errorsSince >= CONFIG.RAIN_DELAY;
+  if (wantRain && !game.raining) {
+    game.raining = true;
+    careerOnRainStart(game.errors);
+  } else if (!wantRain && game.raining) {
+    game.raining = false;
+    careerOnRainStop();
+  }
+  const rainTarget = game.raining ? Math.min(1, 0.45 + game.errors * 0.1) : 0;
+  game.rain += (rainTarget - game.rain) * Math.min(1, dt * 0.6);
+
+  // --- 13. Confetti laten vallen ---
   for (const c of game.confetti) {
     c.x += c.vx * dt;
     c.y += c.vy * dt;
@@ -286,10 +306,15 @@ function updateRivals(dt, driving) {
   // Nieuwe tegenstander laten verschijnen (rechts, net buiten beeld).
   if (game.overtakeQueue > 0 && game.rivals.length === 0 && game.time >= game.nextRivalAt) {
     game.overtakeQueue -= 1;
-    const others = Object.keys(LIVERIES).filter((id) => id !== save.livery);
-    const pick = LIVERIES[others[Math.floor(Math.random() * others.length)]];
-    const number = 2 + Math.floor(Math.random() * 80);
-    game.rivals.push({ x: TRACK.W + 10, livery: { ...pick, number }, passed: false });
+    const rival = rivalAhead(); // wie rijdt er voor je? (career.js)
+    if (rival) {
+      game.rivals.push({
+        x: TRACK.W + 10,
+        livery: { ...LIVERIES[rival.livery], number: rival.number },
+        code: rival.code,
+        passed: false,
+      });
+    }
   }
 
   // Tegenstanders schuiven naar links (jij bent sneller).
@@ -302,6 +327,15 @@ function updateRivals(dt, driving) {
     }
   }
   game.rivals = game.rivals.filter((r) => r.x > -TRACK.CAR_LEN - 20);
+}
+
+// ---------------------------------------------------------------------
+//  WEER - aantal errors komt van de VS Code-extensie (via career.js)
+// ---------------------------------------------------------------------
+function gameSetErrors(n) {
+  if (n > 0 && game.errors === 0) game.errorsSince = game.time; // errors begonnen
+  if (n === 0) game.errorsSince = null;
+  game.errors = n;
 }
 
 // ---------------------------------------------------------------------
